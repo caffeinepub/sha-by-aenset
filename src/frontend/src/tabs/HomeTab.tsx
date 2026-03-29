@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckSquare, Square, Timer } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { TimerPanel } from "../components/TimerPanel";
 import type { Note } from "../components/TimerPanel";
 import { useAuth } from "../contexts/AuthContext";
@@ -21,7 +21,43 @@ interface NotesActor {
   ): Promise<Note>;
 }
 
-function DonutChart({
+// ─── Module-level weather cache ───────────────────────────────────────────────
+interface WeatherData {
+  temperature: number;
+  windspeed: number;
+  weathercode: number;
+}
+let cachedWeather: WeatherData | null = null;
+
+// ─── WMO codes ────────────────────────────────────────────────────────────────
+const WMO_CODES: Record<number, { label: string; emoji: string }> = {
+  0: { label: "Clear sky", emoji: "☀️" },
+  1: { label: "Mainly clear", emoji: "🌤" },
+  2: { label: "Partly cloudy", emoji: "⛅" },
+  3: { label: "Overcast", emoji: "☁️" },
+  45: { label: "Foggy", emoji: "🌫" },
+  48: { label: "Foggy", emoji: "🌫" },
+  51: { label: "Drizzle", emoji: "🌦" },
+  53: { label: "Drizzle", emoji: "🌦" },
+  55: { label: "Drizzle", emoji: "🌦" },
+  61: { label: "Rain", emoji: "🌧" },
+  63: { label: "Rain", emoji: "🌧" },
+  65: { label: "Heavy rain", emoji: "🌧" },
+  71: { label: "Snow", emoji: "❄️" },
+  73: { label: "Snow", emoji: "❄️" },
+  75: { label: "Heavy snow", emoji: "❄️" },
+  80: { label: "Rain showers", emoji: "🌧" },
+  81: { label: "Rain showers", emoji: "🌧" },
+  82: { label: "Heavy showers", emoji: "🌧" },
+  95: { label: "Thunderstorm", emoji: "⛈" },
+};
+
+function getWeatherInfo(code: number) {
+  return WMO_CODES[code] ?? { label: "Unknown", emoji: "🌡" };
+}
+
+// ─── DonutChart (memoized) ────────────────────────────────────────────────────
+const DonutChart = memo(function DonutChart({
   completed,
   total,
 }: { completed: number; total: number }) {
@@ -70,46 +106,18 @@ function DonutChart({
       </text>
     </svg>
   );
-}
+});
 
-const WMO_CODES: Record<number, { label: string; emoji: string }> = {
-  0: { label: "Clear sky", emoji: "☀️" },
-  1: { label: "Mainly clear", emoji: "🌤" },
-  2: { label: "Partly cloudy", emoji: "⛅" },
-  3: { label: "Overcast", emoji: "☁️" },
-  45: { label: "Foggy", emoji: "🌫" },
-  48: { label: "Foggy", emoji: "🌫" },
-  51: { label: "Drizzle", emoji: "🌦" },
-  53: { label: "Drizzle", emoji: "🌦" },
-  55: { label: "Drizzle", emoji: "🌦" },
-  61: { label: "Rain", emoji: "🌧" },
-  63: { label: "Rain", emoji: "🌧" },
-  65: { label: "Heavy rain", emoji: "🌧" },
-  71: { label: "Snow", emoji: "❄️" },
-  73: { label: "Snow", emoji: "❄️" },
-  75: { label: "Heavy snow", emoji: "❄️" },
-  80: { label: "Rain showers", emoji: "🌧" },
-  81: { label: "Rain showers", emoji: "🌧" },
-  82: { label: "Heavy showers", emoji: "🌧" },
-  95: { label: "Thunderstorm", emoji: "⛈" },
-};
-
-function getWeatherInfo(code: number) {
-  return WMO_CODES[code] ?? { label: "Unknown", emoji: "🌡" };
-}
-
-interface WeatherData {
-  temperature: number;
-  windspeed: number;
-  weathercode: number;
-}
-
-function WeatherWidget() {
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
+// ─── WeatherWidget (memoized + module-level cache) ────────────────────────────
+const WeatherWidget = memo(function WeatherWidget() {
+  const [weather, setWeather] = useState<WeatherData | null>(cachedWeather);
+  const [loading, setLoading] = useState(cachedWeather === null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // If already cached from a previous render, skip fetch entirely
+    if (cachedWeather !== null) return;
+
     if (!navigator.geolocation) {
       setError(true);
       setLoading(false);
@@ -123,6 +131,7 @@ function WeatherWidget() {
             `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`,
           );
           const data = await res.json();
+          cachedWeather = data.current_weather;
           setWeather(data.current_weather);
         } catch {
           setError(true);
@@ -178,8 +187,9 @@ function WeatherWidget() {
       </div>
     </div>
   );
-}
+});
 
+// ─── useLiveClock (fixed: no localStorage read inside interval) ───────────────
 function useLiveClock() {
   const [now, setNow] = useState(() => new Date());
   const [timeFormat, setTimeFormat] = useState(
@@ -187,15 +197,24 @@ function useLiveClock() {
   );
 
   useEffect(() => {
-    const tick = setInterval(() => {
-      setNow(new Date());
-      // re-read format in case it changed in settings
-      setTimeFormat(localStorage.getItem("sha_time_format") || "12");
-    }, 1000);
-    return () => clearInterval(tick);
+    // Tick every second — no localStorage read here
+    const tick = setInterval(() => setNow(new Date()), 1000);
+
+    // Listen for format changes made in Profile settings (same or other tab)
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "sha_time_format") {
+        setTimeFormat(e.newValue || "12");
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      clearInterval(tick);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
-  const timeStr = useMemo(() => {
+  return useMemo(() => {
     const h = now.getHours();
     const m = now.getMinutes();
     const s = now.getSeconds();
@@ -207,10 +226,41 @@ function useLiveClock() {
     const h12 = h % 12 || 12;
     return `${h12}:${pad(m)}:${pad(s)} ${period}`;
   }, [now, timeFormat]);
-
-  return timeStr;
 }
 
+// ─── LiveClock (isolated memoized component so clock ticks don't re-render HomeTab) ──
+const LiveClock = memo(function LiveClock() {
+  const clockStr = useLiveClock();
+  const todayFormatted = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [], // date string only needs to compute once per mount
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.08 }}
+      className="mt-3"
+    >
+      <p className="text-6xl font-mono font-bold text-foreground tabular-nums leading-none tracking-tight">
+        {clockStr}
+      </p>
+      <p className="text-sm font-medium text-muted-foreground mt-1">
+        {todayFormatted}
+      </p>
+    </motion.div>
+  );
+});
+
+// ─── HomeTab ──────────────────────────────────────────────────────────────────
 export default function HomeTab() {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -218,20 +268,20 @@ export default function HomeTab() {
   const today = new Date().toISOString().split("T")[0];
   const { data: tasks, isLoading } = useListTasksByDate(today);
   const updateTask = useUpdateTask();
-  const clockStr = useLiveClock();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [showTimer, setShowTimer] = useState(false);
 
   const notesActor = actor as unknown as NotesActor | null;
 
+  // Lazy-load notes only when the timer panel is first opened
   useEffect(() => {
-    if (!notesActor) return;
+    if (!showTimer || !notesActor || notes.length > 0) return;
     notesActor
       .getAllNotes()
       .then(setNotes)
       .catch(() => {});
-  }, [notesActor]);
+  }, [showTimer, notesActor, notes.length]);
 
   const handleSaveToNote = async (noteId: bigint, sessionText: string) => {
     if (!notesActor) return;
@@ -261,30 +311,26 @@ export default function HomeTab() {
   );
   const total = tasks?.length ?? 0;
 
-  const toggleTask = (task: {
-    id: bigint;
-    title: string;
-    description: string;
-    completed: boolean;
-  }) => {
-    updateTask.mutate({
-      taskId: task.id,
-      title: task.title,
-      description: task.description,
-      completed: !task.completed,
-    });
-  };
-
-  const todayFormatted = new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const toggleTask = useCallback(
+    (task: {
+      id: bigint;
+      title: string;
+      description: string;
+      completed: boolean;
+    }) => {
+      updateTask.mutate({
+        taskId: task.id,
+        title: task.title,
+        description: task.description,
+        completed: !task.completed,
+      });
+    },
+    [updateTask],
+  );
 
   return (
     <div className="flex-1 overflow-y-auto pb-6">
-      {/* Branding hero + clock */}
+      {/* Branding hero */}
       <div className="px-5 pt-4 pb-2">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -299,20 +345,8 @@ export default function HomeTab() {
           </p>
         </motion.div>
 
-        {/* Live clock */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.08 }}
-          className="mt-3"
-        >
-          <p className="text-6xl font-mono font-bold text-foreground tabular-nums leading-none tracking-tight">
-            {clockStr}
-          </p>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
-            {todayFormatted}
-          </p>
-        </motion.div>
+        {/* Live clock — isolated component, ticks never re-render the rest of HomeTab */}
+        <LiveClock />
 
         <motion.div
           initial={{ opacity: 0, y: 8 }}

@@ -7,8 +7,8 @@ import {
   Shirt,
   User,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { memo, useCallback, useEffect, useState } from "react";
 import FloatingChatBot from "./components/FloatingChatBot";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
@@ -27,6 +27,58 @@ import type { TabBackgrounds } from "./tabs/ProfileTab";
 import WardrobeTab from "./tabs/WardrobeTab";
 
 type Tab = "home" | "notes" | "planner" | "finance" | "profile" | "wardrobe";
+
+// Memoize FloatingChatBot so it never re-renders due to parent state changes
+const MemoFloatingChatBot = memo(FloatingChatBot);
+
+function buildBgStyle(
+  bg: TabBackgrounds[Tab] | undefined,
+): React.CSSProperties {
+  if (!bg) return {};
+  const isGradient =
+    bg.imageUrl.startsWith("linear-gradient") ||
+    bg.imageUrl.startsWith("radial-gradient");
+  return {
+    backgroundImage: isGradient ? bg.imageUrl : `url(${bg.imageUrl})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
+}
+
+function TabWrapper({
+  tabId,
+  activeTab,
+  bg,
+  children,
+}: {
+  tabId: Tab;
+  activeTab: Tab;
+  bg: TabBackgrounds[Tab] | undefined;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex-col flex-1 overflow-hidden relative"
+      style={{
+        display: activeTab === tabId ? "flex" : "none",
+        ...buildBgStyle(bg),
+      }}
+    >
+      {bg && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: `rgba(0,0,0,${bg.opacity})`, zIndex: 0 }}
+        />
+      )}
+      <div
+        className="relative flex flex-col flex-1 overflow-hidden"
+        style={{ zIndex: 1 }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
   const { actor, isFetching } = useActor();
@@ -171,21 +223,6 @@ function AppContent() {
     { id: "profile", label: t.profile, icon: <User className="w-5 h-5" /> },
   ];
 
-  const activeBg = tabBackgrounds[activeTab];
-  const isGradient =
-    activeBg &&
-    (activeBg.imageUrl.startsWith("linear-gradient") ||
-      activeBg.imageUrl.startsWith("radial-gradient"));
-  const bgImageStyle: React.CSSProperties = activeBg
-    ? {
-        backgroundImage: isGradient
-          ? activeBg.imageUrl
-          : `url(${activeBg.imageUrl})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }
-    : {};
-
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
@@ -197,45 +234,56 @@ function AppContent() {
         </h1>
       </header>
 
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={activeTab}
-          initial={{ opacity: 0, x: 12 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -12 }}
-          transition={{ duration: 0.22 }}
-          className="flex flex-col flex-1 overflow-hidden relative"
-          style={bgImageStyle}
+      {/* All tabs rendered simultaneously — visibility toggled via display:flex/none */}
+      {/* This eliminates the mount/unmount penalty on every tab switch */}
+      <main className="flex flex-col flex-1 overflow-hidden relative">
+        <TabWrapper tabId="home" activeTab={activeTab} bg={tabBackgrounds.home}>
+          <HomeTab />
+        </TabWrapper>
+
+        <TabWrapper
+          tabId="notes"
+          activeTab={activeTab}
+          bg={tabBackgrounds.notes}
         >
-          {/* Background overlay */}
-          {activeBg && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `rgba(0,0,0,${activeBg.opacity})`,
-                zIndex: 0,
-              }}
-            />
-          )}
-          {/* Tab content above overlay */}
-          <div
-            className="relative flex flex-col flex-1 overflow-hidden"
-            style={{ zIndex: 1 }}
-          >
-            {activeTab === "home" && <HomeTab />}
-            {activeTab === "notes" && <NotesTab />}
-            {activeTab === "planner" && <PlannerTab />}
-            {activeTab === "finance" && <FinanceTab />}
-            {activeTab === "wardrobe" && <WardrobeTab />}
-            {activeTab === "profile" && (
-              <ProfileTab
-                onLogout={onLogout}
-                onBackgroundChange={handleBackgroundChange}
-              />
-            )}
-          </div>
-        </motion.main>
-      </AnimatePresence>
+          <NotesTab />
+        </TabWrapper>
+
+        <TabWrapper
+          tabId="planner"
+          activeTab={activeTab}
+          bg={tabBackgrounds.planner}
+        >
+          <PlannerTab />
+        </TabWrapper>
+
+        <TabWrapper
+          tabId="finance"
+          activeTab={activeTab}
+          bg={tabBackgrounds.finance}
+        >
+          <FinanceTab />
+        </TabWrapper>
+
+        <TabWrapper
+          tabId="wardrobe"
+          activeTab={activeTab}
+          bg={tabBackgrounds.wardrobe}
+        >
+          <WardrobeTab />
+        </TabWrapper>
+
+        <TabWrapper
+          tabId="profile"
+          activeTab={activeTab}
+          bg={tabBackgrounds.profile}
+        >
+          <ProfileTab
+            onLogout={onLogout}
+            onBackgroundChange={handleBackgroundChange}
+          />
+        </TabWrapper>
+      </main>
 
       <nav className="flex-shrink-0 border-t border-border bg-card tab-safe-bottom relative z-10">
         <div className="flex items-center justify-around h-16">
@@ -288,7 +336,7 @@ function AppContent() {
         </div>
       </nav>
 
-      <FloatingChatBot userName={user.name} />
+      <MemoFloatingChatBot userName={user.name} />
     </div>
   );
 }

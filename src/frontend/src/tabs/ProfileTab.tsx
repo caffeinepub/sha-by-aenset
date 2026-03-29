@@ -119,20 +119,14 @@ export function getTabBackgrounds(): TabBackgrounds {
     const stored = JSON.parse(
       localStorage.getItem(BG_STORAGE_KEY) || "{}",
     ) as TabBackgrounds;
-    // If home background not explicitly set, use the floral preset as default
+    // Only Home tab gets a default background
     if (!stored.home) {
-      stored.home = {
-        imageUrl: FLORAL_PRESET_URL,
-        opacity: 0.15,
-      };
+      stored.home = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
     }
     return stored;
   } catch {
     return {
-      home: {
-        imageUrl: FLORAL_PRESET_URL,
-        opacity: 0.15,
-      },
+      home: { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 },
     };
   }
 }
@@ -263,10 +257,10 @@ export default function ProfileTab({
 
   const removeBg = () => {
     const next = { ...tabBgs };
-    delete next[bgTab];
-    // If removing home bg, restore floral default
     if (bgTab === "home") {
-      next.home = { imageUrl: FLORAL_PRESET_URL, opacity: 0.15 };
+      next[bgTab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+    } else {
+      delete next[bgTab];
     }
     setTabBgs(next);
     saveTabBackgrounds(next);
