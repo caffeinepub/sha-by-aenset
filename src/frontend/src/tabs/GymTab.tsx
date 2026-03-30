@@ -1364,7 +1364,7 @@ export default function GymTab() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60"
+                className="fixed inset-0 bg-black/60 z-40"
                 style={{ zIndex: 200 }}
                 onClick={() => setShowTemplatePicker(false)}
               />
@@ -1373,7 +1373,7 @@ export default function GymTab() {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10"
+                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 z-50"
                 style={{ zIndex: 201 }}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -1419,7 +1419,7 @@ export default function GymTab() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60"
+                className="fixed inset-0 bg-black/60 z-40"
                 style={{ zIndex: 200 }}
                 onClick={() => setShowDaySheet(false)}
               />
@@ -1428,7 +1428,7 @@ export default function GymTab() {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10"
+                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 z-50"
                 style={{ zIndex: 201 }}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -1481,7 +1481,7 @@ export default function GymTab() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60"
+                className="fixed inset-0 bg-black/60 z-40"
                 style={{ zIndex: 200 }}
                 onClick={() => setShowExerciseSheet(false)}
               />
@@ -1490,7 +1490,7 @@ export default function GymTab() {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 overflow-y-auto max-h-[85vh]"
+                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 overflow-y-auto max-h-[85vh] z-50"
                 style={{ zIndex: 201 }}
               >
                 <div className="flex items-center justify-between mb-4">

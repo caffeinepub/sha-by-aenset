@@ -226,6 +226,21 @@ function AppContent() {
     }
   }, [identity, setUser]);
 
+  // Safety net: if not loading and we have an identity but no user and not showing
+  // onboarding, force onboarding so the app never gets stuck on a blank screen.
+  useEffect(() => {
+    if (
+      !isLoading &&
+      !isInitializing &&
+      !isFetching &&
+      identity &&
+      !user &&
+      !showOnboarding
+    ) {
+      setShowOnboarding(true);
+    }
+  }, [isLoading, isInitializing, isFetching, identity, user, showOnboarding]);
+
   const onLogout = () => {
     clearIdentity();
     setUser(null);

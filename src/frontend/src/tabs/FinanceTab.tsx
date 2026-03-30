@@ -47,17 +47,21 @@ export default function FinanceTab() {
       toast.error("Enter a category");
       return;
     }
-    await createEntry.mutateAsync({
-      amount: num,
-      entryType,
-      category,
-      description,
-      date,
-    });
-    setAmount("");
-    setCategory("");
-    setDescription("");
-    toast.success("Entry added!");
+    try {
+      await createEntry.mutateAsync({
+        amount: num,
+        entryType,
+        category,
+        description,
+        date,
+      });
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      toast.success("Entry added!");
+    } catch {
+      // onError in useCreateEntry already shows toast
+    }
   };
 
   return (

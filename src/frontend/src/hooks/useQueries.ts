@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type {
   ClothingItem,
   Entry,
@@ -13,6 +14,12 @@ import type {
   UserProfileView,
 } from "../backend.d";
 import { useActor } from "./useActor";
+
+function extractErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  return "Something went wrong. Please try again.";
+}
 
 export function useGetAllTasks() {
   const { actor, isFetching } = useActor();
@@ -42,9 +49,16 @@ export function useCreateTask() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { title: string; description: string; date: string }) =>
-      actor!.createTask(vars.title, vars.description, vars.date),
+    mutationFn: (vars: {
+      title: string;
+      description: string;
+      date: string;
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createTask(vars.title, vars.description, vars.date);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -57,14 +71,17 @@ export function useUpdateTask() {
       title: string;
       description: string;
       completed: boolean;
-    }) =>
-      actor!.updateTask(
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updateTask(
         vars.taskId,
         vars.title,
         vars.description,
         vars.completed,
-      ),
+      );
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -72,8 +89,12 @@ export function useDeleteTask() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (taskId: bigint) => actor!.deleteTask(taskId),
+    mutationFn: (taskId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteTask(taskId);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -111,18 +132,21 @@ export function useCreateEntry() {
       category: string;
       description: string;
       date: string;
-    }) =>
-      actor!.createFinanceEntry(
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createFinanceEntry(
         vars.amount,
         vars.entryType,
         vars.category,
         vars.description,
         vars.date,
-      ),
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["entries"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
     },
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -130,11 +154,15 @@ export function useDeleteEntry() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (entryId: bigint) => actor!.deleteEntry(entryId),
+    mutationFn: (entryId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteEntry(entryId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["entries"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
     },
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -154,9 +182,12 @@ export function useSaveUserProfile() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (profile: UserProfileView) =>
-      actor!.saveCallerUserProfile(profile),
+    mutationFn: (profile: UserProfileView) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.saveCallerUserProfile(profile);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -168,9 +199,16 @@ export function useUpdatePreferences() {
       language: string;
       darkMode: boolean;
       geminiApiKey: string;
-    }) =>
-      actor!.updatePreferences(vars.language, vars.darkMode, vars.geminiApiKey),
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updatePreferences(
+        vars.language,
+        vars.darkMode,
+        vars.geminiApiKey,
+      );
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -180,9 +218,7 @@ export function useGetAllNotes() {
     queryKey: ["notes"],
     queryFn: async () => {
       if (!actor) return [];
-      const a = actor as any;
-      if (typeof a.getAllNotes !== "function") return [];
-      return a.getAllNotes() as Promise<Note[]>;
+      return actor.getAllNotes();
     },
     enabled: !!actor && !isFetching,
   });
@@ -193,10 +229,11 @@ export function useDeleteNote() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (noteId: bigint) => {
-      const a = actor as any;
-      return a.deleteNote(noteId) as Promise<void>;
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteNote(noteId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -210,15 +247,36 @@ export function useCreateNote() {
       folderId: bigint;
       tags: string[];
     }) => {
-      const a = actor as any;
-      return a.createNote(
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createNote(vars.title, vars.body, vars.folderId, vars.tags);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
+  });
+}
+
+export function useUpdateNote() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      noteId: bigint;
+      title: string;
+      body: string;
+      folderId: bigint;
+      tags: string[];
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updateNote(
+        vars.noteId,
         vars.title,
         vars.body,
         vars.folderId,
         vars.tags,
-      ) as Promise<any>;
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -228,11 +286,35 @@ export function useGetAllFolders() {
     queryKey: ["folders"],
     queryFn: async () => {
       if (!actor) return [];
-      const a = actor as any;
-      if (typeof a.getAllFolders !== "function") return [];
-      return a.getAllFolders() as Promise<Folder[]>;
+      return actor.getAllFolders();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateFolder() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { name: string; color: string }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createFolder(vars.name, vars.color);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["folders"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
+  });
+}
+
+export function useDeleteFolder() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (folderId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteFolder(folderId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["folders"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -258,15 +340,18 @@ export function useCreateOutfit() {
       description: string;
       photoUrl: string;
       tags: string[];
-    }) =>
-      actor!.createOutfit(
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createOutfit(
         vars.name,
         vars.occasion,
         vars.description,
         vars.photoUrl,
         vars.tags,
-      ),
+      );
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outfits"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -281,16 +366,19 @@ export function useUpdateOutfit() {
       description: string;
       photoUrl: string;
       tags: string[];
-    }) =>
-      actor!.updateOutfit(
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updateOutfit(
         vars.outfitId,
         vars.name,
         vars.occasion,
         vars.description,
         vars.photoUrl,
         vars.tags,
-      ),
+      );
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outfits"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -298,8 +386,12 @@ export function useDeleteOutfit() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (outfitId: bigint) => actor!.deleteOutfit(outfitId),
+    mutationFn: (outfitId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteOutfit(outfitId);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outfits"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -328,6 +420,30 @@ export function useCreateClothingItem() {
       return actor.createClothingItem(vars.name, vars.category, vars.photoUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clothing"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
+  });
+}
+
+export function useUpdateClothingItem() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      itemId: bigint;
+      name: string;
+      category: string;
+      photoUrl: string;
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updateClothingItem(
+        vars.itemId,
+        vars.name,
+        vars.category,
+        vars.photoUrl,
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clothing"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -335,8 +451,12 @@ export function useDeleteClothingItem() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (itemId: bigint) => actor!.deleteClothingItem(itemId),
+    mutationFn: (itemId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteClothingItem(itemId);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clothing"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -357,9 +477,11 @@ export function useSetPlannerDayOutfit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { date: string; outfitId: bigint }) => {
-      return actor!.setPlannerDayOutfit(vars.date, vars.outfitId);
+      if (!actor) throw new Error("Not authenticated");
+      return actor.setPlannerDayOutfit(vars.date, vars.outfitId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["plannerOutfits"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -367,12 +489,16 @@ export function useDeletePlannerDayOutfit() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (date: string) => actor!.deletePlannerDayOutfit(date),
+    mutationFn: (date: string) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deletePlannerDayOutfit(date);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["plannerOutfits"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
-// ── Routine hooks ──────────────────────────────────────────────────────────────
+// ── Routine hooks ────────────────────────────────────────────────────────────────────────
 
 export function useGetAllRoutines() {
   const { actor, isFetching } = useActor();
@@ -395,6 +521,7 @@ export function useCreateRoutine() {
       return actor.createRoutine(vars.name, vars.timeOfDay);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -411,6 +538,7 @@ export function useUpdateRoutine() {
       return actor.updateRoutine(vars.routineId, vars.name, vars.timeOfDay);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -423,6 +551,7 @@ export function useDeleteRoutine() {
       return actor.deleteRoutine(routineId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 
@@ -435,6 +564,7 @@ export function useSetRoutineCompletion() {
       return actor.setRoutineCompletion(vars.date, vars.completedRoutineIds);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routineCompletions"] }),
+    onError: (e) => toast.error(extractErrorMessage(e)),
   });
 }
 

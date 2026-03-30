@@ -604,7 +604,7 @@ function MyClothesSection({ gender }: { gender: Gender }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60"
+              className="fixed inset-0 bg-black/60 z-40"
               style={{ zIndex: 200 }}
               onClick={() => setFormOpen(false)}
             />
@@ -616,7 +616,7 @@ function MyClothesSection({ gender }: { gender: Gender }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
               style={{ zIndex: 201 }}
             >
               <div className="flex items-center justify-between mb-4">
@@ -1023,7 +1023,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60"
+              className="fixed inset-0 bg-black/60 z-40"
               style={{ zIndex: 200 }}
               onClick={() => setFormOpen(false)}
             />
@@ -1035,7 +1035,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
               style={{ zIndex: 201 }}
             >
               <div className="flex items-center justify-between mb-4">
@@ -1160,7 +1160,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60"
+              className="fixed inset-0 bg-black/60 z-40"
               style={{ zIndex: 200 }}
               onClick={() => setBuilderOpen(false)}
             />
@@ -1172,7 +1172,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
               style={{
                 zIndex: 201,
                 maxHeight: "80vh",
@@ -1442,7 +1442,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60"
+              className="fixed inset-0 bg-black/60 z-40"
               style={{ zIndex: 200 }}
               onClick={() => setChatOpen(false)}
             />
@@ -1454,7 +1454,7 @@ function OutfitsSection({ gender }: { gender: Gender }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl flex flex-col"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl flex flex-col z-50"
               style={{ zIndex: 201, height: "65vh" }}
             >
               <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">

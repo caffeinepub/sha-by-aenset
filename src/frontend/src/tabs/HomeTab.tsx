@@ -72,6 +72,7 @@ const DonutChart = memo(function DonutChart({
       viewBox="0 0 88 88"
       role="img"
       aria-label={`${completed} of ${total} tasks completed`}
+      className="text-foreground"
     >
       <title>{`${completed}/${total} tasks`}</title>
       <circle
@@ -98,7 +99,7 @@ const DonutChart = memo(function DonutChart({
         x="44"
         y="49"
         textAnchor="middle"
-        fill="oklch(var(--foreground))"
+        fill="currentColor"
         fontSize="13"
         fontWeight="700"
       >

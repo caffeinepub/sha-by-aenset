@@ -80,7 +80,7 @@ const FOLDER_COLORS = [
   "#c084fc",
 ];
 
-type NoteType = "normal" | "checklist" | "grocery";
+type NoteType = "normal" | "grocery";
 
 interface GroceryItem {
   id: number;
@@ -107,7 +107,6 @@ function detectNoteType(body: string): NoteType {
   try {
     const p = JSON.parse(body);
     if (p.type === "grocery") return "grocery";
-    if (p.type === "checklist") return "checklist";
   } catch {}
   return "normal";
 }
@@ -566,11 +565,9 @@ export default function NotesTab() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {noteType === "grocery" ? (
+                      {noteType === "grocery" && (
                         <ShoppingCart className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      ) : noteType === "checklist" ? (
-                        <CheckSquare className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      ) : null}
+                      )}
                       <p className="text-sm font-semibold text-foreground truncate">
                         {note.title || "Untitled"}
                       </p>
@@ -684,31 +681,25 @@ export default function NotesTab() {
               <div>
                 <Label className="text-xs font-medium mb-1.5 block">Type</Label>
                 <div className="flex gap-2">
-                  {(["normal", "checklist", "grocery"] as NoteType[]).map(
-                    (type) => (
-                      <button
-                        type="button"
-                        key={type}
-                        onClick={() => {
-                          setNoteForm((f) => ({ ...f, noteType: type }));
-                          if (type === "grocery" && groceryItems.length === 0) {
-                            setGroceryItems([]);
-                          }
-                        }}
-                        className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors capitalize ${
-                          noteForm.noteType === type
-                            ? "border-accent bg-accent/10 text-accent"
-                            : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {type === "grocery"
-                          ? "Grocery"
-                          : type === "checklist"
-                            ? "Checklist"
-                            : "Normal"}
-                      </button>
-                    ),
-                  )}
+                  {(["normal", "grocery"] as NoteType[]).map((type) => (
+                    <button
+                      type="button"
+                      key={type}
+                      onClick={() => {
+                        setNoteForm((f) => ({ ...f, noteType: type }));
+                        if (type === "grocery" && groceryItems.length === 0) {
+                          setGroceryItems([]);
+                        }
+                      }}
+                      className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors capitalize ${
+                        noteForm.noteType === type
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {type === "grocery" ? "Grocery" : "Normal"}
+                    </button>
+                  ))}
                 </div>
               </div>
 

@@ -149,12 +149,21 @@ export default function PlannerTab() {
 
   const addTask = async () => {
     if (!newTitle.trim()) return;
-    const task = await createTask.mutateAsync({
-      title: newTitle.trim(),
-      description: "",
-      date: selectedDate,
-    });
-    if (newPriority !== "None" || newDueTime || newRecurring !== "None") {
+    let task: Awaited<ReturnType<typeof createTask.mutateAsync>> | undefined;
+    try {
+      task = await createTask.mutateAsync({
+        title: newTitle.trim(),
+        description: "",
+        date: selectedDate,
+      });
+    } catch {
+      // onError in useCreateTask already shows toast
+      return;
+    }
+    if (
+      task &&
+      (newPriority !== "None" || newDueTime || newRecurring !== "None")
+    ) {
       setTaskMeta(task.id.toString(), {
         priority: newPriority,
         dueTime: newDueTime,
@@ -640,7 +649,7 @@ export default function PlannerTab() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60"
+                    className="fixed inset-0 bg-black/60 z-40"
                     style={{ zIndex: 200 }}
                     onClick={() => setOutfitPickerOpen(false)}
                   />
@@ -652,7 +661,7 @@ export default function PlannerTab() {
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
                     style={{ zIndex: 201 }}
                   >
                     <div className="flex items-center justify-between mb-4">
