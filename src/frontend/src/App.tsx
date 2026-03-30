@@ -40,7 +40,6 @@ type Tab =
   | "wardrobe"
   | "gym";
 
-// Memoize FloatingChatBot so it never re-renders due to parent state changes
 const MemoFloatingChatBot = memo(FloatingChatBot);
 
 function buildBgStyle(
@@ -133,7 +132,6 @@ function AppContent() {
   }, [setIsDark]);
 
   const [activeTab, setActiveTab] = useState<Tab>("home");
-  // Only mount tabs that have been visited — avoids mounting all 7 tabs on startup
   const [mountedTabs, setMountedTabs] = useState<Set<Tab>>(
     () => new Set<Tab>(["home"]),
   );
@@ -159,29 +157,23 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    // If no identity, reset and let auth screen handle it
     if (!identity) {
       setIsLoading(false);
       return;
     }
-    // Still waiting for actor to be created
     if (isFetching) return;
-    // Actor failed to load — unblock the spinner so the app doesn’t hang
     if (!actor) {
       setIsLoading(false);
       return;
     }
 
-    // ─ Try loading from localStorage cache first for instant display ─
     const cached = localCache.get<UserProfileView>(CACHE_KEYS.profile);
     if (cached) {
       setUser(cached);
       setIsLoading(false);
-      // Restore dark mode from cache
       if (cached.preferences?.darkMode !== undefined) {
         setIsDarkRef.current(cached.preferences.darkMode);
       }
-      // Sync from backend in background (no spinner)
       actor
         .getCallerUserProfile()
         .then((profile) => {
@@ -197,9 +189,7 @@ function AppContent() {
       return;
     }
 
-    // No cache — do the full load with spinner
     setIsLoading(true);
-    // Hard timeout: never stay on loading screen more than 6s
     const timeout = setTimeout(() => {
       setIsLoading(false);
       setShowOnboarding(true);
@@ -232,7 +222,6 @@ function AppContent() {
   useEffect(() => {
     if (!identity) {
       setUser(null);
-      // Clear cached profile on logout so next login re-fetches fresh
       localCache.remove(CACHE_KEYS.profile);
     }
   }, [identity, setUser]);
@@ -247,11 +236,7 @@ function AppContent() {
   };
 
   const handleOnboardingFinish = async (name: string) => {
-    if (!actor) {
-      setShowOnboarding(false);
-      return;
-    }
-    const defaultProfile = {
+    const defaultProfile: UserProfileView = {
       name: name || "User",
       email: "",
       preferences: { language: "en", darkMode: false, geminiApiKey: "" },
@@ -259,17 +244,18 @@ function AppContent() {
       tasks: [],
       finances: [],
     };
-    try {
-      await actor.saveCallerUserProfile(defaultProfile);
-      localCache.set(CACHE_KEYS.profile, defaultProfile);
-    } catch {
-      // silent
-    }
+
+    // Always set user so the app doesn't loop back to onboarding
     setUser(defaultProfile);
+    localCache.set(CACHE_KEYS.profile, defaultProfile);
     setShowOnboarding(false);
+
+    // Save to backend in background (non-blocking)
+    if (actor) {
+      actor.saveCallerUserProfile(defaultProfile).catch(() => {});
+    }
   };
 
-  // Only show the splash/spinner if we have no identity or no cached data yet
   if (isInitializing || isFetching) {
     return <SplashScreen />;
   }
@@ -321,7 +307,6 @@ function AppContent() {
         </h1>
       </header>
 
-      {/* Only mounted tabs are rendered — lazily mounted on first visit, then kept alive */}
       <main className="flex flex-col flex-1 overflow-hidden relative">
         {mountedTabs.has("home") && (
           <TabWrapper
