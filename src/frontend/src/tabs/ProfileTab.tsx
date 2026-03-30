@@ -119,15 +119,34 @@ export function getTabBackgrounds(): TabBackgrounds {
     const stored = JSON.parse(
       localStorage.getItem(BG_STORAGE_KEY) || "{}",
     ) as TabBackgrounds;
-    // Only Home tab gets a default background
-    if (!stored.home) {
-      stored.home = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+    const ALL_TABS: TabKey[] = [
+      "home",
+      "notes",
+      "planner",
+      "finance",
+      "wardrobe",
+      "profile",
+    ];
+    for (const tab of ALL_TABS) {
+      if (!stored[tab]) {
+        stored[tab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+      }
     }
     return stored;
   } catch {
-    return {
-      home: { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 },
-    };
+    const ALL_TABS: TabKey[] = [
+      "home",
+      "notes",
+      "planner",
+      "finance",
+      "wardrobe",
+      "profile",
+    ];
+    const defaults: TabBackgrounds = {};
+    for (const tab of ALL_TABS) {
+      defaults[tab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+    }
+    return defaults;
   }
 }
 
@@ -257,11 +276,8 @@ export default function ProfileTab({
 
   const removeBg = () => {
     const next = { ...tabBgs };
-    if (bgTab === "home") {
-      next[bgTab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
-    } else {
-      delete next[bgTab];
-    }
+    // Reset to floral default for all tabs
+    next[bgTab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
     setTabBgs(next);
     saveTabBackgrounds(next);
     onBackgroundChange?.();
@@ -568,9 +584,7 @@ export default function ProfileTab({
               onClick={removeBg}
             >
               <Trash2 className="w-4 h-4" />
-              {bgTab === "home"
-                ? "Reset to default"
-                : `Remove background for ${TAB_LABELS.find((t) => t.id === bgTab)?.label}`}
+              Reset to default floral
             </Button>
           )}
         </div>
