@@ -15,6 +15,7 @@ export function useActor() {
       const isAuthenticated = !!identity;
 
       if (!isAuthenticated) {
+        // Return anonymous actor if not authenticated
         return await createActorWithConfig();
       }
 
@@ -29,15 +30,12 @@ export function useActor() {
       await actor._initializeAccessControlWithSecret(adminToken);
       return actor;
     },
-    // Re-register after 3 minutes so post-deployment auth resets are recovered automatically.
-    staleTime: 3 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    // Only refetch when identity changes
+    staleTime: Number.POSITIVE_INFINITY,
     enabled: true,
   });
 
-  // When the actor changes, lazily invalidate all dependent queries so they refetch
-  // when their component is next focused/mounted -- not all at once (avoids flooding).
+  // When the actor changes, lazily invalidate dependent queries (no forced refetch)
   useEffect(() => {
     if (actorQuery.data) {
       queryClient.invalidateQueries({
@@ -47,6 +45,29 @@ export function useActor() {
       });
     }
   }, [actorQuery.data, queryClient]);
+
+  // Periodically re-register and re-register on window focus to handle post-deployment resets
+  useEffect(() => {
+    const actor = actorQuery.data;
+    if (!actor || !identity) return;
+
+    const reregister = async () => {
+      try {
+        const adminToken = getSecretParameter("caffeineAdminToken") || "";
+        await actor._initializeAccessControlWithSecret(adminToken);
+      } catch {
+        // Silently ignore re-registration errors
+      }
+    };
+
+    const interval = setInterval(reregister, 5 * 60 * 1000);
+    window.addEventListener("focus", reregister);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", reregister);
+    };
+  }, [actorQuery.data, identity]);
 
   return {
     actor: actorQuery.data || null,

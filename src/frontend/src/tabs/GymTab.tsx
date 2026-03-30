@@ -1464,46 +1464,49 @@ export default function GymTab() {
                 onClick={() => setShowDaySheet(false)}
               />
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 z-50"
+                className="fixed inset-0 flex items-center justify-center z-50 px-4"
                 style={{ zIndex: 201 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-sm">
-                    {editingDayId ? "Edit Day" : "New Workout Day"}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowDaySheet(false)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      Day name (e.g. "Chest Day", "Leg Day")
-                    </span>
-                    <Input
-                      value={dayForm.name}
-                      onChange={(e) => setDayForm({ name: e.target.value })}
-                      onKeyDown={(e) => e.key === "Enter" && saveDay()}
-                      placeholder="e.g. Chest Day"
-                      className="mt-1"
-                      autoFocus
-                    />
+                <div className="bg-background rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto px-5 pt-4 pb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm">
+                      {editingDayId ? "Edit Day" : "New Workout Day"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowDaySheet(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <Button
-                    className="w-full"
-                    onClick={saveDay}
-                    disabled={!dayForm.name.trim()}
-                  >
-                    {editingDayId ? "Save Changes" : "Create Day"}
-                  </Button>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-xs text-muted-foreground">
+                        Day name (e.g. "Chest Day", "Leg Day")
+                      </span>
+                      <Input
+                        value={dayForm.name}
+                        onChange={(e) => setDayForm({ name: e.target.value })}
+                        onKeyDown={(e) => e.key === "Enter" && saveDay()}
+                        placeholder="e.g. Chest Day"
+                        className="mt-1"
+                        autoFocus
+                      />
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={saveDay}
+                      disabled={!dayForm.name.trim()}
+                    >
+                      {editingDayId ? "Save Changes" : "Create Day"}
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             </>
@@ -1526,150 +1529,153 @@ export default function GymTab() {
                 onClick={() => setShowExerciseSheet(false)}
               />
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-10 overflow-y-auto max-h-[85vh] z-50"
+                className="fixed inset-0 flex items-center justify-center z-50 px-4"
                 style={{ zIndex: 201 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-sm">
-                    {editingExercise ? "Edit Exercise" : "Add Exercise"}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowExerciseSheet(false)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      Exercise name
-                    </span>
-                    <Input
-                      value={exForm.name}
-                      onChange={(e) =>
-                        setExForm((p) => ({ ...p, name: e.target.value }))
-                      }
-                      placeholder="e.g. Bench Press"
-                      className="mt-1"
-                      autoFocus
-                    />
+                <div className="bg-background rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto px-5 pt-4 pb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm">
+                      {editingExercise ? "Edit Exercise" : "Add Exercise"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowExerciseSheet(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-3">
                     <div>
                       <span className="text-xs text-muted-foreground">
-                        Sets
+                        Exercise name
                       </span>
                       <Input
-                        type="number"
-                        min={1}
-                        value={exForm.sets}
+                        value={exForm.name}
                         onChange={(e) =>
-                          setExForm((p) => ({
-                            ...p,
-                            sets: Number(e.target.value),
-                          }))
+                          setExForm((p) => ({ ...p, name: e.target.value }))
                         }
+                        placeholder="e.g. Bench Press"
                         className="mt-1"
+                        autoFocus
                       />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          Sets
+                        </span>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={exForm.sets}
+                          onChange={(e) =>
+                            setExForm((p) => ({
+                              ...p,
+                              sets: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          Reps
+                        </span>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={exForm.reps}
+                          onChange={(e) =>
+                            setExForm((p) => ({
+                              ...p,
+                              reps: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          Weight (kg)
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          value={exForm.weight}
+                          onChange={(e) =>
+                            setExForm((p) => ({
+                              ...p,
+                              weight: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          Rest (sec)
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={exForm.restTime}
+                          onChange={(e) =>
+                            setExForm((p) => ({
+                              ...p,
+                              restTime: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          Duration (min)
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={exForm.duration}
+                          onChange={(e) =>
+                            setExForm((p) => ({
+                              ...p,
+                              duration: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground">
-                        Reps
+                        Notes (optional)
                       </span>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={exForm.reps}
+                      <Textarea
+                        value={exForm.notes}
                         onChange={(e) =>
-                          setExForm((p) => ({
-                            ...p,
-                            reps: Number(e.target.value),
-                          }))
+                          setExForm((p) => ({ ...p, notes: e.target.value }))
                         }
-                        className="mt-1"
+                        placeholder="e.g. Use dumbbells, focus on form"
+                        className="mt-1 resize-none h-16"
                       />
                     </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">
-                        Weight (kg)
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={0.5}
-                        value={exForm.weight}
-                        onChange={(e) =>
-                          setExForm((p) => ({
-                            ...p,
-                            weight: Number(e.target.value),
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={saveExercise}
+                      disabled={!exForm.name.trim()}
+                    >
+                      {editingExercise ? "Save Changes" : "Add Exercise"}
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-xs text-muted-foreground">
-                        Rest (sec)
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={exForm.restTime}
-                        onChange={(e) =>
-                          setExForm((p) => ({
-                            ...p,
-                            restTime: Number(e.target.value),
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">
-                        Duration (min)
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={exForm.duration}
-                        onChange={(e) =>
-                          setExForm((p) => ({
-                            ...p,
-                            duration: Number(e.target.value),
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      Notes (optional)
-                    </span>
-                    <Textarea
-                      value={exForm.notes}
-                      onChange={(e) =>
-                        setExForm((p) => ({ ...p, notes: e.target.value }))
-                      }
-                      placeholder="e.g. Use dumbbells, focus on form"
-                      className="mt-1 resize-none h-16"
-                    />
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={saveExercise}
-                    disabled={!exForm.name.trim()}
-                  >
-                    {editingExercise ? "Save Changes" : "Add Exercise"}
-                  </Button>
                 </div>
               </motion.div>
             </>

@@ -4,8 +4,6 @@ import App from "./App";
 import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
 import "./index.css";
 
-// Fix BigInt JSON serialization to use the __bigint__ prefix that localCache reviver expects.
-// Without this, BigInt values stored in cache come back as plain strings, breaking ID comparisons.
 BigInt.prototype.toJSON = function () {
   return `__bigint__${this.toString()}`;
 };
@@ -16,7 +14,15 @@ declare global {
   }
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>

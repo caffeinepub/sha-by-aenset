@@ -644,159 +644,167 @@ export default function NotesTab() {
         {editorOpen && (
           <motion.div
             data-ocid="notes.modal"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-sm text-foreground">
-                {editingId ? "Edit Note" : "New Note"}
-              </h3>
-              <div className="flex items-center gap-2">
-                {editingId && (
-                  <button
-                    type="button"
-                    data-ocid="notes.delete_button"
-                    onClick={() => editingId && handleDelete(editingId)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  data-ocid="notes.close_button"
-                  onClick={() => setEditorOpen(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-1">
-              {/* Note type */}
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">Type</Label>
-                <div className="flex gap-2">
-                  {(["normal", "grocery"] as NoteType[]).map((type) => (
+            <div
+              className="pointer-events-auto w-full max-w-[430px] max-h-[90vh] overflow-y-auto bg-background rounded-2xl px-5 pt-4 pb-8 mx-4"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-sm text-foreground">
+                  {editingId ? "Edit Note" : "New Note"}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {editingId && (
                     <button
                       type="button"
-                      key={type}
-                      onClick={() => {
-                        setNoteForm((f) => ({ ...f, noteType: type }));
-                        if (type === "grocery" && groceryItems.length === 0) {
-                          setGroceryItems([]);
-                        }
-                      }}
-                      className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors capitalize ${
-                        noteForm.noteType === type
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-border text-muted-foreground"
-                      }`}
+                      data-ocid="notes.delete_button"
+                      onClick={() => editingId && handleDelete(editingId)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
                     >
-                      {type === "grocery" ? "Grocery" : "Normal"}
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  ))}
+                  )}
+                  <button
+                    type="button"
+                    data-ocid="notes.close_button"
+                    onClick={() => setEditorOpen(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Title */}
-              <div>
-                <Input
-                  data-ocid="notes.input"
-                  placeholder="Note title..."
-                  value={noteForm.title}
-                  onChange={(e) =>
-                    setNoteForm((f) => ({ ...f, title: e.target.value }))
-                  }
-                  className="h-9 text-sm"
-                />
-              </div>
-
-              {/* Body or Grocery */}
-              {noteForm.noteType === "grocery" ? (
-                <GroceryListView
-                  items={groceryItems}
-                  onChange={setGroceryItems}
-                />
-              ) : (
-                <Textarea
-                  data-ocid="notes.textarea"
-                  placeholder="Write your note here..."
-                  value={noteForm.body}
-                  onChange={(e) =>
-                    setNoteForm((f) => ({ ...f, body: e.target.value }))
-                  }
-                  className="text-sm resize-none"
-                  rows={5}
-                />
-              )}
-
-              {/* Folder */}
-              {folders.length > 0 && (
+              <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-1">
+                {/* Note type */}
                 <div>
                   <Label className="text-xs font-medium mb-1.5 block">
-                    Folder
+                    Type
                   </Label>
-                  <Select
-                    value={noteForm.folderId.toString()}
-                    onValueChange={(v) =>
-                      setNoteForm((f) => ({ ...f, folderId: BigInt(v) }))
-                    }
-                  >
-                    <SelectTrigger
-                      data-ocid="notes.select"
-                      className="h-9 text-sm"
-                    >
-                      <SelectValue placeholder="No folder" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">No folder</SelectItem>
-                      {folders.map((folder) => (
-                        <SelectItem
-                          key={folder.id.toString()}
-                          value={folder.id.toString()}
-                        >
-                          {folder.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    {(["normal", "grocery"] as NoteType[]).map((type) => (
+                      <button
+                        type="button"
+                        key={type}
+                        onClick={() => {
+                          setNoteForm((f) => ({ ...f, noteType: type }));
+                          if (type === "grocery" && groceryItems.length === 0) {
+                            setGroceryItems([]);
+                          }
+                        }}
+                        className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors capitalize ${
+                          noteForm.noteType === type
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {type === "grocery" ? "Grocery" : "Normal"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
 
-              {/* Tags */}
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">
-                  Tags
-                  <span className="text-muted-foreground font-normal ml-1">
-                    (comma-separated)
-                  </span>
-                </Label>
-                <Input
-                  data-ocid="notes.input"
-                  placeholder="e.g. study, work, ideas"
-                  value={noteForm.tags}
-                  onChange={(e) =>
-                    setNoteForm((f) => ({ ...f, tags: e.target.value }))
-                  }
-                  className="h-9 text-sm"
-                />
+                {/* Title */}
+                <div>
+                  <Input
+                    data-ocid="notes.input"
+                    placeholder="Note title..."
+                    value={noteForm.title}
+                    onChange={(e) =>
+                      setNoteForm((f) => ({ ...f, title: e.target.value }))
+                    }
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Body or Grocery */}
+                {noteForm.noteType === "grocery" ? (
+                  <GroceryListView
+                    items={groceryItems}
+                    onChange={setGroceryItems}
+                  />
+                ) : (
+                  <Textarea
+                    data-ocid="notes.textarea"
+                    placeholder="Write your note here..."
+                    value={noteForm.body}
+                    onChange={(e) =>
+                      setNoteForm((f) => ({ ...f, body: e.target.value }))
+                    }
+                    className="text-sm resize-none"
+                    rows={5}
+                  />
+                )}
+
+                {/* Folder */}
+                {folders.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">
+                      Folder
+                    </Label>
+                    <Select
+                      value={noteForm.folderId.toString()}
+                      onValueChange={(v) =>
+                        setNoteForm((f) => ({ ...f, folderId: BigInt(v) }))
+                      }
+                    >
+                      <SelectTrigger
+                        data-ocid="notes.select"
+                        className="h-9 text-sm"
+                      >
+                        <SelectValue placeholder="No folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">No folder</SelectItem>
+                        {folders.map((folder) => (
+                          <SelectItem
+                            key={folder.id.toString()}
+                            value={folder.id.toString()}
+                          >
+                            {folder.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Tags */}
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">
+                    Tags
+                    <span className="text-muted-foreground font-normal ml-1">
+                      (comma-separated)
+                    </span>
+                  </Label>
+                  <Input
+                    data-ocid="notes.input"
+                    placeholder="e.g. study, work, ideas"
+                    value={noteForm.tags}
+                    onChange={(e) =>
+                      setNoteForm((f) => ({ ...f, tags: e.target.value }))
+                    }
+                    className="h-9 text-sm"
+                  />
+                </div>
               </div>
-            </div>
 
-            <Button
-              data-ocid="notes.submit_button"
-              type="button"
-              className="w-full mt-4"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? "Saving..." : editingId ? "Update Note" : "Save Note"}
-            </Button>
+              <Button
+                data-ocid="notes.submit_button"
+                type="button"
+                className="w-full mt-4"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : editingId ? "Update Note" : "Save Note"}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

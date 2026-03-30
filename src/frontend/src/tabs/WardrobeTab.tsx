@@ -615,84 +615,92 @@ function MyClothesSection({ gender }: { gender: Gender }) {
           {formOpen && (
             <motion.div
               data-ocid="wardrobe.modal"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
               style={{ zIndex: 201 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-sm">{t.addClothingItem}</h3>
-                <button
-                  type="button"
-                  data-ocid="wardrobe.close_button"
-                  onClick={() => setFormOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-                <Input
-                  data-ocid="wardrobe.input"
-                  placeholder="e.g. White Oxford Shirt"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  className="h-9 text-sm"
-                />
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">
-                    {t.category}
-                    {gender && (
-                      <span className="ml-1 text-accent font-normal">
-                        ({gender === "male" ? "Men's" : "Women's"})
-                      </span>
-                    )}
-                  </Label>
-                  <div
-                    className="flex gap-2 overflow-x-auto pb-1"
-                    style={{ scrollbarWidth: "none" }}
-                    data-ocid="wardrobe.select"
-                  >
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() =>
-                          setForm((f) => ({ ...f, category: cat }))
-                        }
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                          form.category === cat
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-muted text-muted-foreground border-transparent hover:border-primary/50"
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <PhotoUpload
-                  value={form.photoUrl}
-                  onChange={(url) => setForm((f) => ({ ...f, photoUrl: url }))}
-                  label="Photo (optional)"
-                />
-              </div>
-              <Button
-                data-ocid="wardrobe.submit_button"
-                type="button"
-                className="w-full mt-4"
-                onClick={handleSave}
-                disabled={createItem.isPending || !form.name.trim()}
+              <div
+                className="pointer-events-auto w-full max-w-[430px] max-h-[90vh] overflow-y-auto bg-background rounded-2xl px-5 pt-4 pb-8 mx-4"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
               >
-                {createItem.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : null}
-                {t.addItem}
-              </Button>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-sm">{t.addClothingItem}</h3>
+                  <button
+                    type="button"
+                    data-ocid="wardrobe.close_button"
+                    onClick={() => setFormOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                  <Input
+                    data-ocid="wardrobe.input"
+                    placeholder="e.g. White Oxford Shirt"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    className="h-9 text-sm"
+                  />
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">
+                      {t.category}
+                      {gender && (
+                        <span className="ml-1 text-accent font-normal">
+                          ({gender === "male" ? "Men's" : "Women's"})
+                        </span>
+                      )}
+                    </Label>
+                    <div
+                      className="flex gap-2 overflow-x-auto pb-1"
+                      style={{ scrollbarWidth: "none" }}
+                      data-ocid="wardrobe.select"
+                    >
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() =>
+                            setForm((f) => ({ ...f, category: cat }))
+                          }
+                          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                            form.category === cat
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted text-muted-foreground border-transparent hover:border-primary/50"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <PhotoUpload
+                    value={form.photoUrl}
+                    onChange={(url) =>
+                      setForm((f) => ({ ...f, photoUrl: url }))
+                    }
+                    label="Photo (optional)"
+                  />
+                </div>
+                <Button
+                  data-ocid="wardrobe.submit_button"
+                  type="button"
+                  className="w-full mt-4"
+                  onClick={handleSave}
+                  disabled={createItem.isPending || !form.name.trim()}
+                >
+                  {createItem.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  {t.addItem}
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>,
@@ -1035,121 +1043,129 @@ function OutfitsSection({ gender }: { gender: Gender }) {
           {formOpen && (
             <motion.div
               data-ocid="wardrobe.modal"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
               style={{ zIndex: 201 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-sm text-foreground">
-                  {editingId ? "Edit Outfit" : "New Outfit"}
-                </h3>
-                <button
-                  type="button"
-                  data-ocid="wardrobe.close_button"
-                  onClick={() => setFormOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-1">
-                <Input
-                  data-ocid="wardrobe.input"
-                  placeholder="e.g. Summer Brunch Look"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  className="h-9 text-sm"
-                />
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">
-                    Occasion
-                  </Label>
-                  <Select
-                    value={form.occasion}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, occasion: v }))
-                    }
+              <div
+                className="pointer-events-auto w-full max-w-[430px] max-h-[90vh] overflow-y-auto bg-background rounded-2xl px-5 pt-4 pb-8 mx-4"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-sm text-foreground">
+                    {editingId ? "Edit Outfit" : "New Outfit"}
+                  </h3>
+                  <button
+                    type="button"
+                    data-ocid="wardrobe.close_button"
+                    onClick={() => setFormOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
-                    <SelectTrigger
-                      data-ocid="wardrobe.select"
-                      className="h-9 text-sm"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OCCASIONS.map((occ) => (
-                        <SelectItem key={occ} value={occ}>
-                          {occ}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="__custom__">Custom...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {form.occasion === "__custom__" && (
-                    <Input
-                      placeholder="Enter custom occasion"
-                      value={form.customOccasion}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          customOccasion: e.target.value,
-                        }))
-                      }
-                      className="mt-2 h-9 text-sm"
-                    />
-                  )}
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <Textarea
-                  data-ocid="wardrobe.textarea"
-                  placeholder="Describe your outfit..."
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  className="text-sm resize-none"
-                  rows={3}
-                />
-                <PhotoUpload
-                  value={form.photoUrl}
-                  onChange={(url) => setForm((f) => ({ ...f, photoUrl: url }))}
-                />
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">
-                    Tags
-                    <span className="text-muted-foreground font-normal ml-1">
-                      (comma-separated)
-                    </span>
-                  </Label>
+
+                <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-1">
                   <Input
                     data-ocid="wardrobe.input"
-                    placeholder="e.g. minimalist, spring, linen"
-                    value={form.tags}
+                    placeholder="e.g. Summer Brunch Look"
+                    value={form.name}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, tags: e.target.value }))
+                      setForm((f) => ({ ...f, name: e.target.value }))
                     }
                     className="h-9 text-sm"
                   />
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">
+                      Occasion
+                    </Label>
+                    <Select
+                      value={form.occasion}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, occasion: v }))
+                      }
+                    >
+                      <SelectTrigger
+                        data-ocid="wardrobe.select"
+                        className="h-9 text-sm"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[9999]">
+                        {OCCASIONS.map((occ) => (
+                          <SelectItem key={occ} value={occ}>
+                            {occ}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">Custom...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.occasion === "__custom__" && (
+                      <Input
+                        placeholder="Enter custom occasion"
+                        value={form.customOccasion}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            customOccasion: e.target.value,
+                          }))
+                        }
+                        className="mt-2 h-9 text-sm"
+                      />
+                    )}
+                  </div>
+                  <Textarea
+                    data-ocid="wardrobe.textarea"
+                    placeholder="Describe your outfit..."
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, description: e.target.value }))
+                    }
+                    className="text-sm resize-none"
+                    rows={3}
+                  />
+                  <PhotoUpload
+                    value={form.photoUrl}
+                    onChange={(url) =>
+                      setForm((f) => ({ ...f, photoUrl: url }))
+                    }
+                  />
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">
+                      Tags
+                      <span className="text-muted-foreground font-normal ml-1">
+                        (comma-separated)
+                      </span>
+                    </Label>
+                    <Input
+                      data-ocid="wardrobe.input"
+                      placeholder="e.g. minimalist, spring, linen"
+                      value={form.tags}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, tags: e.target.value }))
+                      }
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <Button
-                data-ocid="wardrobe.submit_button"
-                type="button"
-                className="w-full mt-5"
-                onClick={handleSave}
-                disabled={saving || !form.name.trim()}
-              >
-                {saving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : null}
-                {saving ? "Saving..." : editingId ? t.save : t.save}
-              </Button>
+                <Button
+                  data-ocid="wardrobe.submit_button"
+                  type="button"
+                  className="w-full mt-5"
+                  onClick={handleSave}
+                  disabled={saving || !form.name.trim()}
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  {saving ? "Saving..." : editingId ? t.save : t.save}
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>,
@@ -1172,256 +1188,259 @@ function OutfitsSection({ gender }: { gender: Gender }) {
           {builderOpen && (
             <motion.div
               data-ocid="wardrobe.modal"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
-              style={{
-                zIndex: 201,
-                maxHeight: "80vh",
-                display: "flex",
-                flexDirection: "column",
-              }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+              style={{ zIndex: 201 }}
             >
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h3 className="font-bold text-sm text-foreground">
-                  {t.buildOutfit}
-                </h3>
-                <button
-                  type="button"
-                  data-ocid="wardrobe.close_button"
-                  onClick={() => setBuilderOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <div
+                className="pointer-events-auto w-full max-w-[430px] max-h-[90vh] overflow-y-auto bg-background rounded-2xl px-5 pt-4 pb-8 mx-4 flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                  <h3 className="font-bold text-sm text-foreground">
+                    {t.buildOutfit}
+                  </h3>
+                  <button
+                    type="button"
+                    data-ocid="wardrobe.close_button"
+                    onClick={() => setBuilderOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              {builderStep === "pick" ? (
-                <>
-                  <p className="text-xs text-muted-foreground mb-3 flex-shrink-0">
-                    Select clothing items to combine:
-                  </p>
-                  {(clothingItems as ClothingItem[]).length === 0 ? (
-                    <div className="text-center py-8 flex-1">
-                      <ShoppingBag className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        No clothing items yet. Add some in "My Clothes" first.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-y-auto flex-1 grid grid-cols-3 gap-2 mb-4">
-                      {(clothingItems as ClothingItem[]).map((item) => {
-                        const selected = selectedClothingIds.has(
-                          item.id.toString(),
-                        );
-                        return (
-                          <button
-                            type="button"
-                            key={item.id.toString()}
-                            onClick={() => {
-                              setSelectedClothingIds((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(item.id.toString())) {
-                                  next.delete(item.id.toString());
-                                } else {
-                                  next.add(item.id.toString());
-                                }
-                                return next;
-                              });
-                            }}
-                            className={`rounded-xl overflow-hidden border-2 transition-all ${
-                              selected ? "border-accent" : "border-transparent"
-                            }`}
-                          >
-                            {item.photoUrl ? (
-                              <img
-                                src={resolvePhoto(item.photoUrl)}
-                                alt={item.name}
-                                className="w-full aspect-square object-cover"
-                              />
-                            ) : (
-                              <div className="w-full aspect-square bg-muted flex items-center justify-center">
-                                <Shirt className="w-6 h-6 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="p-1 bg-card">
-                              <p className="text-[9px] text-foreground truncate">
-                                {item.name}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {/* Preview collage of selected items */}
-                  {selectedClothingIds.size > 0 && (
-                    <div className="mb-3 flex-shrink-0">
-                      <p className="text-[10px] text-muted-foreground mb-1">
-                        Preview:
-                      </p>
-                      <div
-                        className="w-full rounded-xl overflow-hidden bg-muted"
-                        style={{ height: 80 }}
-                      >
-                        <div
-                          className="w-full h-full grid gap-0.5"
-                          style={{
-                            gridTemplateColumns: `repeat(${Math.min(selectedClothingIds.size, 4)}, 1fr)`,
-                          }}
-                        >
-                          {(clothingItems as ClothingItem[])
-                            .filter((item) =>
-                              selectedClothingIds.has(item.id.toString()),
-                            )
-                            .slice(0, 4)
-                            .map((item) =>
-                              item.photoUrl ? (
+                {builderStep === "pick" ? (
+                  <>
+                    <p className="text-xs text-muted-foreground mb-3 flex-shrink-0">
+                      Select clothing items to combine:
+                    </p>
+                    {(clothingItems as ClothingItem[]).length === 0 ? (
+                      <div className="text-center py-8 flex-1">
+                        <ShoppingBag className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          No clothing items yet. Add some in "My Clothes" first.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-y-auto flex-1 grid grid-cols-3 gap-2 mb-4">
+                        {(clothingItems as ClothingItem[]).map((item) => {
+                          const selected = selectedClothingIds.has(
+                            item.id.toString(),
+                          );
+                          return (
+                            <button
+                              type="button"
+                              key={item.id.toString()}
+                              onClick={() => {
+                                setSelectedClothingIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(item.id.toString())) {
+                                    next.delete(item.id.toString());
+                                  } else {
+                                    next.add(item.id.toString());
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className={`rounded-xl overflow-hidden border-2 transition-all ${
+                                selected
+                                  ? "border-accent"
+                                  : "border-transparent"
+                              }`}
+                            >
+                              {item.photoUrl ? (
                                 <img
-                                  key={item.id.toString()}
                                   src={resolvePhoto(item.photoUrl)}
                                   alt={item.name}
-                                  className="w-full h-full object-cover"
+                                  className="w-full aspect-square object-cover"
                                 />
                               ) : (
-                                <div
-                                  key={item.id.toString()}
-                                  className="w-full h-full bg-muted/80 flex items-center justify-center"
-                                >
-                                  <Shirt className="w-4 h-4 text-muted-foreground" />
+                                <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                                  <Shirt className="w-6 h-6 text-muted-foreground" />
                                 </div>
-                              ),
-                            )}
+                              )}
+                              <div className="p-1 bg-card">
+                                <p className="text-[9px] text-foreground truncate">
+                                  {item.name}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Preview collage of selected items */}
+                    {selectedClothingIds.size > 0 && (
+                      <div className="mb-3 flex-shrink-0">
+                        <p className="text-[10px] text-muted-foreground mb-1">
+                          Preview:
+                        </p>
+                        <div
+                          className="w-full rounded-xl overflow-hidden bg-muted"
+                          style={{ height: 80 }}
+                        >
+                          <div
+                            className="w-full h-full grid gap-0.5"
+                            style={{
+                              gridTemplateColumns: `repeat(${Math.min(selectedClothingIds.size, 4)}, 1fr)`,
+                            }}
+                          >
+                            {(clothingItems as ClothingItem[])
+                              .filter((item) =>
+                                selectedClothingIds.has(item.id.toString()),
+                              )
+                              .slice(0, 4)
+                              .map((item) =>
+                                item.photoUrl ? (
+                                  <img
+                                    key={item.id.toString()}
+                                    src={resolvePhoto(item.photoUrl)}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div
+                                    key={item.id.toString()}
+                                    className="w-full h-full bg-muted/80 flex items-center justify-center"
+                                  >
+                                    <Shirt className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                ),
+                              )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  <Button
-                    className="w-full flex-shrink-0"
-                    disabled={selectedClothingIds.size === 0}
-                    onClick={() => setBuilderStep("details")}
-                  >
-                    Next ({selectedClothingIds.size} selected)
-                  </Button>
-                </>
-              ) : (
-                <div className="overflow-y-auto flex-1 space-y-3 pr-1">
-                  {/* Collage preview in details step */}
-                  <div
-                    className="w-full rounded-xl overflow-hidden bg-muted mb-1"
-                    style={{ height: 100 }}
-                  >
-                    <div
-                      className="w-full h-full grid gap-0.5"
-                      style={{
-                        gridTemplateColumns: `repeat(${Math.min(selectedClothingIds.size, 4)}, 1fr)`,
-                      }}
+                    )}
+                    <Button
+                      className="w-full flex-shrink-0"
+                      disabled={selectedClothingIds.size === 0}
+                      onClick={() => setBuilderStep("details")}
                     >
+                      Next ({selectedClothingIds.size} selected)
+                    </Button>
+                  </>
+                ) : (
+                  <div className="overflow-y-auto flex-1 space-y-3 pr-1">
+                    {/* Collage preview in details step */}
+                    <div
+                      className="w-full rounded-xl overflow-hidden bg-muted mb-1"
+                      style={{ height: 100 }}
+                    >
+                      <div
+                        className="w-full h-full grid gap-0.5"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.min(selectedClothingIds.size, 4)}, 1fr)`,
+                        }}
+                      >
+                        {(clothingItems as ClothingItem[])
+                          .filter((item) =>
+                            selectedClothingIds.has(item.id.toString()),
+                          )
+                          .slice(0, 4)
+                          .map((item) =>
+                            item.photoUrl ? (
+                              <img
+                                key={item.id.toString()}
+                                src={resolvePhoto(item.photoUrl)}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div
+                                key={item.id.toString()}
+                                className="w-full h-full bg-muted/80 flex items-center justify-center"
+                              >
+                                <Shirt className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            ),
+                          )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       {(clothingItems as ClothingItem[])
                         .filter((item) =>
                           selectedClothingIds.has(item.id.toString()),
                         )
-                        .slice(0, 4)
-                        .map((item) =>
-                          item.photoUrl ? (
-                            <img
-                              key={item.id.toString()}
-                              src={resolvePhoto(item.photoUrl)}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div
-                              key={item.id.toString()}
-                              className="w-full h-full bg-muted/80 flex items-center justify-center"
-                            >
-                              <Shirt className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          ),
+                        .map((item) => (
+                          <Badge
+                            key={item.id.toString()}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {item.name}
+                          </Badge>
+                        ))}
+                    </div>
+                    <Input
+                      data-ocid="wardrobe.input"
+                      placeholder="Outfit name..."
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, name: e.target.value }))
+                      }
+                      className="h-9 text-sm"
+                    />
+                    <Select
+                      value={form.occasion}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, occasion: v }))
+                      }
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[9999]">
+                        {OCCASIONS.map((occ) => (
+                          <SelectItem key={occ} value={occ}>
+                            {occ}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      placeholder="Optional description..."
+                      value={form.description}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, description: e.target.value }))
+                      }
+                      className="text-sm resize-none"
+                      rows={2}
+                    />
+                    <PhotoUpload
+                      value={form.photoUrl}
+                      onChange={(url) =>
+                        setForm((f) => ({ ...f, photoUrl: url }))
+                      }
+                      label="Full outfit photo (optional)"
+                    />
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setBuilderStep("pick")}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        onClick={handleBuildOutfitSave}
+                        disabled={createOutfit.isPending || !form.name.trim()}
+                      >
+                        {createOutfit.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          t.save
                         )}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(clothingItems as ClothingItem[])
-                      .filter((item) =>
-                        selectedClothingIds.has(item.id.toString()),
-                      )
-                      .map((item) => (
-                        <Badge
-                          key={item.id.toString()}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {item.name}
-                        </Badge>
-                      ))}
-                  </div>
-                  <Input
-                    data-ocid="wardrobe.input"
-                    placeholder="Outfit name..."
-                    value={form.name}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, name: e.target.value }))
-                    }
-                    className="h-9 text-sm"
-                  />
-                  <Select
-                    value={form.occasion}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, occasion: v }))
-                    }
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OCCASIONS.map((occ) => (
-                        <SelectItem key={occ} value={occ}>
-                          {occ}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Textarea
-                    placeholder="Optional description..."
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, description: e.target.value }))
-                    }
-                    className="text-sm resize-none"
-                    rows={2}
-                  />
-                  <PhotoUpload
-                    value={form.photoUrl}
-                    onChange={(url) =>
-                      setForm((f) => ({ ...f, photoUrl: url }))
-                    }
-                    label="Full outfit photo (optional)"
-                  />
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setBuilderStep("pick")}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={handleBuildOutfitSave}
-                      disabled={createOutfit.isPending || !form.name.trim()}
-                    >
-                      {createOutfit.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        t.save
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>,
@@ -1454,70 +1473,77 @@ function OutfitsSection({ gender }: { gender: Gender }) {
           {chatOpen && (
             <motion.div
               data-ocid="wardrobe.modal"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl flex flex-col z-50"
-              style={{ zIndex: 201, height: "65vh" }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+              style={{ zIndex: 201 }}
             >
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
-                <div>
-                  <h3 className="font-bold text-sm">{t.styleAssistant}</h3>
-                  <p className="text-[10px] text-muted-foreground">
-                    {gender
-                      ? `Personalized for ${gender === "male" ? "men" : "women"}`
-                      : "Rule-based fashion advice"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  data-ocid="wardrobe.close_button"
-                  onClick={() => setChatOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                {messages.map((msg, i) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: message index is stable
-                    key={i}
-                    className={`flex ${
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+              <div
+                className="pointer-events-auto w-full max-w-[430px] bg-background rounded-2xl mx-4 flex flex-col overflow-hidden"
+                style={{ height: "65vh" }}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
+                  <div>
+                    <h3 className="font-bold text-sm">{t.styleAssistant}</h3>
+                    <p className="text-[10px] text-muted-foreground">
+                      {gender
+                        ? `Personalized for ${gender === "male" ? "men" : "women"}`
+                        : "Rule-based fashion advice"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    data-ocid="wardrobe.close_button"
+                    onClick={() => setChatOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                  {messages.map((msg, i) => (
                     <div
-                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                        msg.role === "user"
-                          ? "bg-accent text-accent-foreground rounded-br-sm"
-                          : "bg-muted text-foreground rounded-bl-sm"
+                      // biome-ignore lint/suspicious/noArrayIndexKey: message index is stable
+                      key={i}
+                      className={`flex ${
+                        msg.role === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {msg.text}
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-accent text-accent-foreground rounded-br-sm"
+                            : "bg-muted text-foreground rounded-bl-sm"
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-              <div className="px-4 pb-5 pt-2 border-t border-border shrink-0 flex gap-2">
-                <Input
-                  data-ocid="wardrobe.input"
-                  placeholder={t.chatPlaceholder}
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleChat()}
-                  className="flex-1 h-9 text-xs"
-                />
-                <Button
-                  data-ocid="wardrobe.primary_button"
-                  size="sm"
-                  onClick={handleChat}
-                  className="h-9 px-3"
-                >
-                  Send
-                </Button>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+                <div className="px-4 pb-5 pt-2 border-t border-border shrink-0 flex gap-2">
+                  <Input
+                    data-ocid="wardrobe.input"
+                    placeholder={t.chatPlaceholder}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleChat()}
+                    className="flex-1 h-9 text-xs"
+                  />
+                  <Button
+                    data-ocid="wardrobe.primary_button"
+                    size="sm"
+                    onClick={handleChat}
+                    className="h-9 px-3"
+                  >
+                    Send
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
