@@ -737,9 +737,9 @@ function OutfitsSection({ gender }: { gender: Gender }) {
     photoUrl: "",
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on every render
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on every render to scroll on message change
   });
 
   const openCreate = () => {

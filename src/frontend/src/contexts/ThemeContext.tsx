@@ -1,6 +1,7 @@
 import {
   type ReactNode,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -21,10 +22,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => localStorage.getItem("sha_dark_mode") !== "false",
   );
 
-  const setIsDark = (v: boolean) => {
+  // useCallback gives setIsDark a stable reference so it never re-triggers
+  // the profile-load useEffect in App.tsx (which lists setIsDark as a dep).
+  const setIsDark = useCallback((v: boolean) => {
     localStorage.setItem("sha_dark_mode", String(v));
     setIsDarkState(v);
-  };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
