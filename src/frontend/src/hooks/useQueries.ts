@@ -324,7 +324,8 @@ export function useCreateClothingItem() {
       category: string;
       photoUrl: string;
     }) => {
-      return actor!.createClothingItem(vars.name, vars.category, vars.photoUrl);
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createClothingItem(vars.name, vars.category, vars.photoUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clothing"] }),
   });
@@ -379,9 +380,7 @@ export function useGetAllRoutines() {
     queryKey: ["routines"],
     queryFn: async () => {
       if (!actor) return [];
-      const a = actor as any;
-      if (typeof a.getAllRoutines !== "function") return [];
-      return a.getAllRoutines() as Promise<Routine[]>;
+      return actor.getAllRoutines();
     },
     enabled: !!actor && !isFetching,
   });
@@ -391,8 +390,10 @@ export function useCreateRoutine() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { name: string; timeOfDay: string }) =>
-      (actor as any).createRoutine(vars.name, vars.timeOfDay),
+    mutationFn: (vars: { name: string; timeOfDay: string }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.createRoutine(vars.name, vars.timeOfDay);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
   });
 }
@@ -405,8 +406,10 @@ export function useUpdateRoutine() {
       routineId: bigint;
       name: string;
       timeOfDay: string;
-    }) =>
-      (actor as any).updateRoutine(vars.routineId, vars.name, vars.timeOfDay),
+    }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.updateRoutine(vars.routineId, vars.name, vars.timeOfDay);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
   });
 }
@@ -415,7 +418,10 @@ export function useDeleteRoutine() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (routineId: bigint) => (actor as any).deleteRoutine(routineId),
+    mutationFn: (routineId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteRoutine(routineId);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
   });
 }
@@ -424,8 +430,10 @@ export function useSetRoutineCompletion() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { date: string; completedRoutineIds: bigint[] }) =>
-      (actor as any).setRoutineCompletion(vars.date, vars.completedRoutineIds),
+    mutationFn: (vars: { date: string; completedRoutineIds: bigint[] }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.setRoutineCompletion(vars.date, vars.completedRoutineIds);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["routineCompletions"] }),
   });
 }
@@ -436,9 +444,7 @@ export function useGetAllRoutineCompletions() {
     queryKey: ["routineCompletions"],
     queryFn: async () => {
       if (!actor) return [];
-      const a2 = actor as any;
-      if (typeof a2.getAllRoutineCompletions !== "function") return [];
-      return a2.getAllRoutineCompletions() as Promise<RoutineCompletion[]>;
+      return actor.getAllRoutineCompletions();
     },
     enabled: !!actor && !isFetching,
   });

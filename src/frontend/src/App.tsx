@@ -102,26 +102,48 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!identity || !actor || isFetching) return;
+    // If no identity, reset and let auth screen handle it
+    if (!identity) {
+      setIsLoading(false);
+      return;
+    }
+    // Still waiting for actor to be created
+    if (isFetching) return;
+    // Actor failed to load — unblock the spinner so the app doesn't hang
+    if (!actor) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    // Race: resolve after 8 seconds even if backend is slow
+    const timeout = setTimeout(() => setIsLoading(false), 8000);
+
     actor
       .getCallerUserProfile()
       .then((profile) => {
+        clearTimeout(timeout);
         if (profile) {
           setUser(profile);
         } else {
           setShowOnboarding(true);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        clearTimeout(timeout);
+        // Backend error: show onboarding so the user can still use the app
+        setShowOnboarding(true);
+      })
       .finally(() => setIsLoading(false));
+
+    return () => clearTimeout(timeout);
   }, [identity, actor, isFetching, setUser, setIsLoading]);
 
   useEffect(() => {
     if (!identity) {
       setUser(null);
-      setIsLoading(true);
     }
-  }, [identity, setUser, setIsLoading]);
+  }, [identity, setUser]);
 
   const onLogout = () => {
     clearIdentity();

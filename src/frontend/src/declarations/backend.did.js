@@ -87,6 +87,16 @@ export const PlannerDayOutfit = IDL.Record({
   'date' : IDL.Text,
   'outfitId' : IDL.Nat,
 });
+export const Routine = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'timeOfDay' : IDL.Text,
+  'timestamp' : Time,
+});
+export const RoutineCompletion = IDL.Record({
+  'date' : IDL.Text,
+  'completedRoutineIds' : IDL.Vec(IDL.Nat),
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -134,6 +144,12 @@ export const idlService = IDL.Service({
   'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
   'getPlannerDayOutfit' : IDL.Func([IDL.Text], [IDL.Opt(PlannerDayOutfit)], ['query']),
   'getAllPlannerDayOutfits' : IDL.Func([], [IDL.Vec(PlannerDayOutfit)], ['query']),
+  'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
+  'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
+  'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
+  'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
+  'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
+  'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -218,6 +234,16 @@ export const idlFactory = ({ IDL }) => {
     'date' : IDL.Text,
     'outfitId' : IDL.Nat,
   });
+  const Routine = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'timeOfDay' : IDL.Text,
+    'timestamp' : IDL.Int,
+  });
+  const RoutineCompletion = IDL.Record({
+    'date' : IDL.Text,
+    'completedRoutineIds' : IDL.Vec(IDL.Nat),
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -273,6 +299,12 @@ export const idlFactory = ({ IDL }) => {
     'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
     'getPlannerDayOutfit' : IDL.Func([IDL.Text], [IDL.Opt(PlannerDayOutfit)], ['query']),
     'getAllPlannerDayOutfits' : IDL.Func([], [IDL.Vec(PlannerDayOutfit)], ['query']),
+    'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
+    'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
+    'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
+    'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
+    'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
+    'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
   });
 };
 

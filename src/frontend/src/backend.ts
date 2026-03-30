@@ -115,6 +115,16 @@ export interface PlannerDayOutfit {
     date: string;
     outfitId: bigint;
 }
+export interface Routine {
+    id: bigint;
+    name: string;
+    timeOfDay: string;
+    timestamp: Time;
+}
+export interface RoutineCompletion {
+    date: string;
+    completedRoutineIds: Array<bigint>;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -158,6 +168,12 @@ export interface backendInterface {
     deletePlannerDayOutfit(date: string): Promise<void>;
     getPlannerDayOutfit(date: string): Promise<PlannerDayOutfit | null>;
     getAllPlannerDayOutfits(): Promise<Array<PlannerDayOutfit>>;
+    createRoutine(name: string, timeOfDay: string): Promise<Routine>;
+    updateRoutine(routineId: bigint, name: string, timeOfDay: string): Promise<Routine>;
+    deleteRoutine(routineId: bigint): Promise<void>;
+    getAllRoutines(): Promise<Array<Routine>>;
+    setRoutineCompletion(date: string, completedRoutineIds: Array<bigint>): Promise<RoutineCompletion>;
+    getAllRoutineCompletions(): Promise<Array<RoutineCompletion>>;
 }
 import type { UserProfileView as _UserProfileView, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -290,6 +306,24 @@ export class Backend implements backendInterface {
     }
     async getAllPlannerDayOutfits(): Promise<Array<PlannerDayOutfit>> {
         return this.call(() => this.actor.getAllPlannerDayOutfits());
+    }
+    async createRoutine(arg0: string, arg1: string): Promise<Routine> {
+        return this.call(() => this.actor.createRoutine(arg0, arg1));
+    }
+    async updateRoutine(arg0: bigint, arg1: string, arg2: string): Promise<Routine> {
+        return this.call(() => this.actor.updateRoutine(arg0, arg1, arg2));
+    }
+    async deleteRoutine(arg0: bigint): Promise<void> {
+        return this.call(() => this.actor.deleteRoutine(arg0));
+    }
+    async getAllRoutines(): Promise<Array<Routine>> {
+        return this.call(() => this.actor.getAllRoutines());
+    }
+    async setRoutineCompletion(arg0: string, arg1: Array<bigint>): Promise<RoutineCompletion> {
+        return this.call(() => this.actor.setRoutineCompletion(arg0, arg1));
+    }
+    async getAllRoutineCompletions(): Promise<Array<RoutineCompletion>> {
+        return this.call(() => this.actor.getAllRoutineCompletions());
     }
 }
 function from_candid_UserRole(value: _UserRole): UserRole {

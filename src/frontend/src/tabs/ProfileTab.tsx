@@ -56,6 +56,11 @@ const PRESET_BACKGROUNDS = [
     value: FLORAL_PRESET_URL,
   },
   {
+    label: "Blue Roses",
+    value:
+      "/assets/uploads/whatsapp_image_2026-03-30_at_12.17.23-019d3d80-09c8-718a-b31d-61187a8b423b-1.jpeg",
+  },
+  {
     label: "Soft Lavender",
     value: "linear-gradient(135deg, #e8d5f5 0%, #c8a8e9 100%)",
   },

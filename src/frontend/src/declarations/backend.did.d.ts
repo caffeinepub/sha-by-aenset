@@ -87,6 +87,16 @@ export interface PlannerDayOutfit {
   'date' : string,
   'outfitId' : bigint,
 }
+export interface Routine {
+  'id' : bigint,
+  'name' : string,
+  'timeOfDay' : string,
+  'timestamp' : Time,
+}
+export interface RoutineCompletion {
+  'date' : string,
+  'completedRoutineIds' : Array<bigint>,
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
@@ -128,6 +138,12 @@ export interface _SERVICE {
   'deletePlannerDayOutfit' : ActorMethod<[string], undefined>,
   'getPlannerDayOutfit' : ActorMethod<[string], [] | [PlannerDayOutfit]>,
   'getAllPlannerDayOutfits' : ActorMethod<[], Array<PlannerDayOutfit>>,
+  'createRoutine' : ActorMethod<[string, string], Routine>,
+  'updateRoutine' : ActorMethod<[bigint, string, string], Routine>,
+  'deleteRoutine' : ActorMethod<[bigint], undefined>,
+  'getAllRoutines' : ActorMethod<[], Array<Routine>>,
+  'setRoutineCompletion' : ActorMethod<[string, Array<bigint>], RoutineCompletion>,
+  'getAllRoutineCompletions' : ActorMethod<[], Array<RoutineCompletion>>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

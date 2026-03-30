@@ -11,13 +11,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   setUser: () => {},
-  isLoading: true,
+  isLoading: false,
   setIsLoading: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfileView | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   return (
     <AuthContext.Provider value={{ user, setUser, isLoading, setIsLoading }}>
       {children}
