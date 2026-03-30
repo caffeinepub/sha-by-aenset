@@ -24,6 +24,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ClothingItem, Outfit } from "../backend.d";
+import ImageCropModal from "../components/ImageCropModal";
 import { useI18n } from "../contexts/I18nContext";
 import {
   useCreateClothingItem,
@@ -345,6 +346,15 @@ function GenderSelector({
 
 // ─── Photo Upload Helper ──────────────────────────────────────────────────────
 
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const arr = dataUrl.split(",");
+  const mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]);
+  const u8arr = new Uint8Array(bstr.length);
+  for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+  return new File([u8arr], filename, { type: mime });
+}
+
 function PhotoUpload({
   value,
   onChange,
@@ -356,11 +366,24 @@ function PhotoUpload({
 }) {
   const { storePhoto, resolvePhoto } = useImageUpload();
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (file: File) => {
+  const handleFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) setCropSrc(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const handleCropConfirm = async (croppedDataUrl: string) => {
+    setCropSrc(null);
     setUploading(true);
     try {
+      const file = dataUrlToFile(croppedDataUrl, "photo.jpg");
       const url = await storePhoto(file);
       onChange(url);
     } catch {
@@ -372,6 +395,13 @@ function PhotoUpload({
 
   return (
     <div>
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
       <Label className="text-xs font-medium mb-1.5 block">{label}</Label>
       <div className="flex items-center gap-3">
         {value ? (

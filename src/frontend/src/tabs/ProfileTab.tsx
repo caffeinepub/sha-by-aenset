@@ -14,6 +14,7 @@ import { Loader2, LogOut, Trash2, Upload } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import ImageCropModal from "../components/ImageCropModal";
 import { useAuth } from "../contexts/AuthContext";
 import { CURRENCIES, useCurrency } from "../contexts/CurrencyContext";
 import { type Language, useI18n } from "../contexts/I18nContext";
@@ -230,6 +231,7 @@ export default function ProfileTab({
     getTabBackgrounds(),
   );
   const fileRef = useRef<HTMLInputElement>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalDark(user?.preferences?.darkMode ?? true);
@@ -291,14 +293,30 @@ export default function ProfileTab({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) setCropSrc(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleCropConfirm = async (croppedDataUrl: string) => {
+    setCropSrc(null);
     try {
-      const dataUrl = await compressImageToDataUrl(file);
-      applyBg({ imageUrl: dataUrl });
+      const compressed = await compressImageToDataUrl(
+        await (async () => {
+          const res = await fetch(croppedDataUrl);
+          const blob = await res.blob();
+          return new File([blob], "bg.jpg", { type: blob.type });
+        })(),
+      );
+      applyBg({ imageUrl: compressed });
       toast.success("Background set!");
     } catch {
       toast.error("Failed to upload image");
     }
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   const initials = (localName || user?.name || "U")
@@ -620,6 +638,14 @@ export default function ProfileTab({
           caffeine.ai
         </a>
       </p>
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
     </div>
   );
 }
