@@ -1,8 +1,17 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckSquare, Square, Timer } from "lucide-react";
+import {
+  CheckSquare,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Square,
+  Timer,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TimerPanel } from "../components/TimerPanel";
 import type { Note } from "../components/TimerPanel";
 import { useAuth } from "../contexts/AuthContext";
@@ -20,14 +29,6 @@ interface NotesActor {
     tags: string[],
   ): Promise<Note>;
 }
-
-// ─── Module-level weather cache ───────────────────────────────────────────────
-interface WeatherData {
-  temperature: number;
-  windspeed: number;
-  weathercode: number;
-}
-let cachedWeather: WeatherData | null = null;
 
 // ─── WMO codes ────────────────────────────────────────────────────────────────
 const WMO_CODES: Record<number, { label: string; emoji: string }> = {
@@ -55,6 +56,393 @@ const WMO_CODES: Record<number, { label: string; emoji: string }> = {
 function getWeatherInfo(code: number) {
   return WMO_CODES[code] ?? { label: "Unknown", emoji: "🌡" };
 }
+
+function degreesToCompass(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function pollenLevel(val: number): { label: string; color: string } {
+  if (val <= 10)
+    return {
+      label: "Low",
+      color: "bg-green-500/20 text-green-700 dark:text-green-300",
+    };
+  if (val <= 50)
+    return {
+      label: "Moderate",
+      color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
+    };
+  return {
+    label: "High",
+    color: "bg-red-500/20 text-red-700 dark:text-red-300",
+  };
+}
+
+// ─── Module-level weather cache ───────────────────────────────────────────────
+interface FullWeatherData {
+  temperature: number;
+  windspeed: number;
+  winddirection: number;
+  weathercode: number;
+  humidity: number;
+  uvIndex: number;
+  sunrise: string;
+  sunset: string;
+  hourly: {
+    time: string[];
+    temperature: number[];
+    precipProb: number[];
+    weathercode: number[];
+    humidity: number[];
+    uvIndex: number[];
+  };
+  pollen: {
+    grass: number;
+    tree: number;
+    weed: number;
+  };
+}
+let cachedFullWeather: FullWeatherData | null = null;
+
+// ─── WeatherWidget ────────────────────────────────────────────────────────────
+const WeatherWidget = memo(function WeatherWidget() {
+  const [weather, setWeather] = useState<FullWeatherData | null>(
+    cachedFullWeather,
+  );
+  const [loading, setLoading] = useState(cachedFullWeather === null);
+  const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (cachedFullWeather !== null) return;
+    if (!navigator.geolocation) {
+      setError(true);
+      setLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lon } = pos.coords;
+          const [forecastRes, aqRes] = await Promise.all([
+            fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,uv_index,weathercode&daily=sunrise,sunset&wind_direction_unit=degrees&timezone=auto`,
+            ),
+            fetch(
+              `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=grass_pollen,tree_pollen,weed_pollen&timezone=auto`,
+            ),
+          ]);
+          const forecast = await forecastRes.json();
+          const aq = await aqRes.json();
+
+          // Find current hour index
+          const now = new Date();
+          const currentHourStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:00`;
+          const hourlyTimes: string[] = forecast.hourly.time;
+          let hourIdx = hourlyTimes.findIndex((t) => t === currentHourStr);
+          if (hourIdx < 0) hourIdx = 0;
+
+          const result: FullWeatherData = {
+            temperature: forecast.current_weather.temperature,
+            windspeed: forecast.current_weather.windspeed,
+            winddirection: forecast.current_weather.winddirection,
+            weathercode: forecast.current_weather.weathercode,
+            humidity: forecast.hourly.relativehumidity_2m[hourIdx] ?? 0,
+            uvIndex: forecast.hourly.uv_index[hourIdx] ?? 0,
+            sunrise: forecast.daily.sunrise[0] ?? "",
+            sunset: forecast.daily.sunset[0] ?? "",
+            hourly: {
+              time: hourlyTimes.slice(hourIdx, hourIdx + 24),
+              temperature: forecast.hourly.temperature_2m.slice(
+                hourIdx,
+                hourIdx + 24,
+              ),
+              precipProb: forecast.hourly.precipitation_probability.slice(
+                hourIdx,
+                hourIdx + 24,
+              ),
+              weathercode: forecast.hourly.weathercode.slice(
+                hourIdx,
+                hourIdx + 24,
+              ),
+              humidity: forecast.hourly.relativehumidity_2m.slice(
+                hourIdx,
+                hourIdx + 24,
+              ),
+              uvIndex: forecast.hourly.uv_index.slice(hourIdx, hourIdx + 24),
+            },
+            pollen: {
+              grass: aq.hourly?.grass_pollen?.[hourIdx] ?? 0,
+              tree: aq.hourly?.tree_pollen?.[hourIdx] ?? 0,
+              weed: aq.hourly?.weed_pollen?.[hourIdx] ?? 0,
+            },
+          };
+
+          cachedFullWeather = result;
+          setWeather(result);
+        } catch {
+          setError(true);
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError(true);
+        setLoading(false);
+      },
+    );
+  }, []);
+
+  // Build rain summary for next 24 hours
+  const rainSummary = useMemo(() => {
+    if (!weather) return "";
+    const probs = weather.hourly.precipProb;
+    const times = weather.hourly.time;
+    const rainHours = probs
+      .map((p, i) => ({ p, t: times[i] }))
+      .filter((h) => h.p >= 30);
+    if (rainHours.length === 0)
+      return "No rain expected in the next 24 hours ☀️";
+    const maxProb = Math.max(...rainHours.map((h) => h.p));
+    const first = new Date(rainHours[0].t).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const last = new Date(rainHours[rainHours.length - 1].t).toLocaleTimeString(
+      [],
+      { hour: "numeric", minute: "2-digit" },
+    );
+    if (first === last) return `~${maxProb}% chance of rain around ${first} 🌧`;
+    return `~${maxProb}% chance of rain between ${first} – ${last} 🌧`;
+  }, [weather]);
+
+  if (loading) {
+    return (
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-8 w-1/2" />
+        <Skeleton className="h-3 w-2/3" />
+      </div>
+    );
+  }
+
+  if (error || !weather) {
+    return (
+      <div className="bg-card border border-border rounded-2xl p-4">
+        <p className="text-sm text-muted-foreground">
+          📍 Location unavailable. Please allow location access to see weather.
+        </p>
+      </div>
+    );
+  }
+
+  const { label, emoji } = getWeatherInfo(weather.weathercode);
+  const compass = degreesToCompass(weather.winddirection);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* Collapsed header */}
+      <button
+        type="button"
+        data-ocid="weather.toggle"
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full text-left"
+      >
+        <div className="flex items-center gap-3 p-4">
+          <span className="text-4xl">{emoji}</span>
+          <div className="flex-1">
+            <p className="text-2xl font-bold text-foreground leading-none">
+              {Math.round(weather.temperature)}°C
+            </p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+          </div>
+          <div className="flex items-center gap-4 mr-2">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Humidity</p>
+              <p className="text-sm font-semibold text-foreground">
+                {weather.humidity}%
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Wind</p>
+              <p className="text-sm font-semibold text-foreground">
+                {weather.windspeed} km/h
+              </p>
+            </div>
+          </div>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded detail */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border px-4 pb-4 space-y-4 pt-3">
+              {/* Current conditions grid */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "UV Index", value: weather.uvIndex.toFixed(1) },
+                  {
+                    label: "Wind",
+                    value: `${weather.windspeed} km/h ${compass}`,
+                  },
+                  { label: "Humidity", value: `${weather.humidity}%` },
+                  { label: "Sunrise", value: formatTime(weather.sunrise) },
+                  { label: "Sunset", value: formatTime(weather.sunset) },
+                  {
+                    label: "Feels like",
+                    value: `${Math.round(weather.temperature)}°C`,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="bg-muted/40 rounded-xl p-2.5 text-center"
+                  >
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                      {item.label}
+                    </p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Rain summary */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-2.5">
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-0.5">
+                  Rain Forecast
+                </p>
+                <p className="text-sm text-foreground">{rainSummary}</p>
+              </div>
+
+              {/* Pollen levels */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Pollen Levels
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {(["grass", "tree", "weed"] as const).map((type) => {
+                    const val = weather.pollen[type];
+                    const { label: lvl, color } = pollenLevel(val);
+                    return (
+                      <span
+                        key={type}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${color}`}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}: {lvl}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 24-hour horizontal scroll */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Next 24 Hours
+                </p>
+                <div className="relative">
+                  <button
+                    onClick={() =>
+                      scrollRef.current?.scrollBy({
+                        left: -180,
+                        behavior: "smooth",
+                      })
+                    }
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center shadow-sm border border-border/50"
+                    type="button"
+                    aria-label="Scroll left"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div
+                    ref={scrollRef}
+                    className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mx-8"
+                    style={{
+                      scrollbarWidth: "none",
+                      WebkitOverflowScrolling: "touch",
+                    }}
+                  >
+                    {weather.hourly.time.map((timeStr, i) => {
+                      const hourLabel = new Date(timeStr).toLocaleTimeString(
+                        [],
+                        {
+                          hour: "numeric",
+                        },
+                      );
+                      const wInfo = getWeatherInfo(
+                        weather.hourly.weathercode[i],
+                      );
+                      const prob = weather.hourly.precipProb[i] ?? 0;
+                      const temp = weather.hourly.temperature[i] ?? 0;
+                      return (
+                        <div
+                          key={timeStr}
+                          className="flex-shrink-0 flex flex-col items-center gap-1 bg-muted/40 rounded-xl px-3 py-2 min-w-[60px]"
+                        >
+                          <p className="text-[10px] text-muted-foreground">
+                            {hourLabel}
+                          </p>
+                          <span className="text-xl">{wInfo.emoji}</span>
+                          <p className="text-xs font-bold text-foreground">
+                            {Math.round(temp)}°
+                          </p>
+                          <p
+                            className={`text-[10px] font-medium ${prob >= 50 ? "text-blue-500" : "text-muted-foreground"}`}
+                          >
+                            {prob}%
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() =>
+                      scrollRef.current?.scrollBy({
+                        left: 180,
+                        behavior: "smooth",
+                      })
+                    }
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center shadow-sm border border-border/50"
+                    type="button"
+                    aria-label="Scroll right"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
 
 // ─── DonutChart (memoized) ────────────────────────────────────────────────────
 const DonutChart = memo(function DonutChart({
@@ -109,88 +497,7 @@ const DonutChart = memo(function DonutChart({
   );
 });
 
-// ─── WeatherWidget (memoized + module-level cache) ────────────────────────────
-const WeatherWidget = memo(function WeatherWidget() {
-  const [weather, setWeather] = useState<WeatherData | null>(cachedWeather);
-  const [loading, setLoading] = useState(cachedWeather === null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    // If already cached from a previous render, skip fetch entirely
-    if (cachedWeather !== null) return;
-
-    if (!navigator.geolocation) {
-      setError(true);
-      setLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          const res = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`,
-          );
-          const data = await res.json();
-          cachedWeather = data.current_weather;
-          setWeather(data.current_weather);
-        } catch {
-          setError(true);
-        } finally {
-          setLoading(false);
-        }
-      },
-      () => {
-        setError(true);
-        setLoading(false);
-      },
-    );
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
-        <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-8 w-1/2" />
-        <Skeleton className="h-3 w-2/3" />
-      </div>
-    );
-  }
-
-  if (error || !weather) {
-    return (
-      <div className="bg-card border border-border rounded-2xl p-4">
-        <p className="text-sm text-muted-foreground">
-          📍 Location unavailable. Please allow location access to see weather.
-        </p>
-      </div>
-    );
-  }
-
-  const { label, emoji } = getWeatherInfo(weather.weathercode);
-
-  return (
-    <div className="bg-card border border-border rounded-2xl p-4">
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">{emoji}</span>
-        <div>
-          <p className="text-2xl font-bold text-foreground">
-            {Math.round(weather.temperature)}°C
-          </p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-xs text-muted-foreground">Wind</p>
-          <p className="text-sm font-semibold text-foreground">
-            {weather.windspeed} km/h
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// ─── useLiveClock (fixed: no localStorage read inside interval) ───────────────
+// ─── useLiveClock ─────────────────────────────────────────────────────────────
 function useLiveClock() {
   const [now, setNow] = useState(() => new Date());
   const [timeFormat, setTimeFormat] = useState(
@@ -198,17 +505,11 @@ function useLiveClock() {
   );
 
   useEffect(() => {
-    // Tick every second — no localStorage read here
     const tick = setInterval(() => setNow(new Date()), 1000);
-
-    // Listen for format changes made in Profile settings (same or other tab)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === "sha_time_format") {
-        setTimeFormat(e.newValue || "12");
-      }
+      if (e.key === "sha_time_format") setTimeFormat(e.newValue || "12");
     };
     window.addEventListener("storage", handleStorage);
-
     return () => {
       clearInterval(tick);
       window.removeEventListener("storage", handleStorage);
@@ -220,16 +521,14 @@ function useLiveClock() {
     const m = now.getMinutes();
     const s = now.getSeconds();
     const pad = (n: number) => String(n).padStart(2, "0");
-    if (timeFormat === "24") {
-      return `${pad(h)}:${pad(m)}:${pad(s)}`;
-    }
+    if (timeFormat === "24") return `${pad(h)}:${pad(m)}:${pad(s)}`;
     const period = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 || 12;
     return `${h12}:${pad(m)}:${pad(s)} ${period}`;
   }, [now, timeFormat]);
 }
 
-// ─── LiveClock (isolated memoized component so clock ticks don't re-render HomeTab) ──
+// ─── LiveClock ────────────────────────────────────────────────────────────────
 const LiveClock = memo(function LiveClock() {
   const clockStr = useLiveClock();
   const todayFormatted = useMemo(
@@ -241,7 +540,7 @@ const LiveClock = memo(function LiveClock() {
         year: "numeric",
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // date string only needs to compute once per mount
+    [],
   );
 
   return (
@@ -275,7 +574,6 @@ export default function HomeTab() {
 
   const notesActor = actor as unknown as NotesActor | null;
 
-  // Lazy-load notes only when the timer panel is first opened
   useEffect(() => {
     if (!showTimer || !notesActor || notes.length > 0) return;
     notesActor
@@ -346,7 +644,6 @@ export default function HomeTab() {
           </p>
         </motion.div>
 
-        {/* Live clock — isolated component, ticks never re-render the rest of HomeTab */}
         <LiveClock />
 
         <motion.div
@@ -391,14 +688,12 @@ export default function HomeTab() {
           {t.yourDayAtAGlance}
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          {/* Tasks progress */}
           <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-2">
             <p className="text-xs font-semibold text-muted-foreground">
               {t.tasksProgress}
             </p>
             <DonutChart completed={completed} total={total} />
           </div>
-          {/* Checklist */}
           <div className="bg-card border border-border rounded-2xl p-4">
             <p className="text-xs font-semibold text-muted-foreground mb-3">
               {t.todaysChecklist}

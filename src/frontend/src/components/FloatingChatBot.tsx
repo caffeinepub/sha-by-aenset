@@ -16,6 +16,19 @@ import { parseDateInput } from "../utils/dateParser";
 
 interface FloatingChatBotProps {
   userName: string;
+  routines?: Array<{
+    id: bigint;
+    name: string;
+    timeOfDay: string;
+    completedToday: boolean;
+  }>;
+  plannerOutfits?: Array<{ date: string; outfitId: bigint }>;
+  outfits?: Array<{
+    id: bigint;
+    name: string;
+    occasion: string;
+    photoUrl: string[];
+  }>;
 }
 
 interface Message {
@@ -44,6 +57,27 @@ function nextTip() {
   return tip;
 }
 
+const HELP_TEXT = `I can help you with:
+
+📋 Tasks: "Add task: go to gym tomorrow" or "Add tasks: task1, task2, task3"
+📝 Notes: "Create note: meeting notes"
+💰 Finance: "Add expense: coffee 5" or "Add income: salary 3000"
+🏋️ Gym: "Log workout: chest day"
+📊 Data: Ask about your tasks, notes, finance, routines, workouts, outfits
+💡 Tips: Ask for advice or motivation`;
+
+function getGymLogs(): Array<{
+  date: string;
+  dayName: string;
+  timestamp: number;
+}> {
+  try {
+    return JSON.parse(localStorage.getItem("sha_gym_logs") || "[]");
+  } catch {
+    return [];
+  }
+}
+
 function generateResponse(
   input: string,
   data: {
@@ -52,13 +86,29 @@ function generateResponse(
     entries: Entry[];
     summary: FinanceSummary | undefined;
     userName: string;
+    routines?: FloatingChatBotProps["routines"];
+    plannerOutfits?: FloatingChatBotProps["plannerOutfits"];
+    outfits?: FloatingChatBotProps["outfits"];
   },
 ): string {
   const q = input.toLowerCase().trim();
-  const { tasks, notes, entries, summary, userName } = data;
+  const {
+    tasks,
+    notes,
+    entries,
+    summary,
+    userName,
+    routines,
+    plannerOutfits,
+    outfits,
+  } = data;
 
   if (/^(hi|hello|hey|sup|howdy)/.test(q)) {
-    return `Hey ${userName}! I'm Sha, your personal assistant. Ask me about your tasks, notes, or finances!`;
+    return `Hey ${userName}! I'm Sha, your personal assistant. Ask me about your tasks, notes, finances, routines, or workouts — or type "help" to see all commands!`;
+  }
+
+  if (/\bhelp\b|what can you do|commands/.test(q)) {
+    return HELP_TEXT;
   }
 
   if (/balance|money|spend|income|expense|finance|budget|cash/.test(q)) {
@@ -113,26 +163,83 @@ function generateResponse(
     return `You have ${notes.length} notes. Recent ones:\n${titles}`;
   }
 
-  if (/advice|tip|motivat|help|how|should|suggest|idea/.test(q)) {
+  if (/routine|streak|habit/.test(q)) {
+    if (!routines || routines.length === 0) {
+      return "You haven't set up any routines yet. Go to Planner > Routine tab to add some!";
+    }
+    const completedToday = routines.filter((r) => r.completedToday);
+    const pct = Math.round((completedToday.length / routines.length) * 100);
+    const pending = routines.filter((r) => !r.completedToday);
+    let reply = `📅 Routines today: ${completedToday.length}/${routines.length} complete (${pct}%)`;
+    if (pending.length > 0) {
+      reply += `\n\nStill pending:\n${pending.map((r) => `- ${r.name} (${r.timeOfDay})`).join("\n")}`;
+    } else {
+      reply += "\n\n🎉 All routines complete for today!";
+    }
+    return reply;
+  }
+
+  if (/wardrobe|outfit|what did i wear/.test(q)) {
+    if (!plannerOutfits || plannerOutfits.length === 0) {
+      return "No outfits have been assigned to planner days yet. Go to Planner and pick an outfit for a day!";
+    }
+    const recent = [...plannerOutfits]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, 5);
+    const lines = recent.map((po) => {
+      const outfit = outfits?.find((o) => o.id === po.outfitId);
+      return `- ${po.date}: ${outfit?.name ?? "Unknown outfit"}`;
+    });
+    return `Recent outfit assignments:\n${lines.join("\n")}`;
+  }
+
+  if (/gym|workout|exercise|how many workout/.test(q)) {
+    const logs = getGymLogs();
+    const now = new Date();
+    const thisMonth = logs.filter((l) => {
+      const d = new Date(l.timestamp);
+      return (
+        d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      );
+    });
+    if (logs.length === 0) {
+      return `You haven't logged any workouts yet. Type "Log workout: chest day" to start!`;
+    }
+    return `🏋️ This month: ${thisMonth.length} workout${thisMonth.length !== 1 ? "s" : ""} logged\n📊 All time: ${logs.length} total\n\nRecent sessions:\n${logs
+      .slice(-3)
+      .reverse()
+      .map((l) => `- ${l.date}: ${l.dayName}`)
+      .join("\n")}`;
+  }
+
+  if (/advice|tip|motivat|should|suggest|idea/.test(q)) {
     return `Here's a tip for you:\n\n"${nextTip()}"`;
   }
 
   if (/summar|overview|status|how am i|dashboard/.test(q)) {
     const pendingCount = tasks.filter((t) => !t.completed).length;
     const balance = summary ? `$${summary.balance.toFixed(2)}` : "unavailable";
-    return `Overview for ${userName}:\n- Pending tasks: ${pendingCount}\n- Notes saved: ${notes.length}\n- Current balance: ${balance}`;
+    const routinePct =
+      routines && routines.length > 0
+        ? `${Math.round((routines.filter((r) => r.completedToday).length / routines.length) * 100)}%`
+        : "N/A";
+    return `Overview for ${userName}:\n- Pending tasks: ${pendingCount}\n- Notes saved: ${notes.length}\n- Current balance: ${balance}\n- Routines today: ${routinePct} complete`;
   }
 
-  return 'I can help you with your tasks, notes, and finances. Try asking:\n- "What are my tasks today?"\n- "What\'s my balance?"\n- "Show me my recent notes"\n- "Give me a productivity tip"';
+  return `I can help you with tasks, notes, finances, routines, and workouts. Type "help" to see all commands!`;
 }
 
-export default function FloatingChatBot({ userName }: FloatingChatBotProps) {
+export default function FloatingChatBot({
+  userName,
+  routines,
+  plannerOutfits,
+  outfits,
+}: FloatingChatBotProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [msgId, setMsgId] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
-  // Track message count in a ref so the scroll effect only depends on `open`
   const msgCountRef = useRef(0);
   msgCountRef.current = messages.length;
 
@@ -144,21 +251,19 @@ export default function FloatingChatBot({ userName }: FloatingChatBotProps) {
 
   const notes = rawNotes as Note[];
 
-  // Show welcome message when panel first opens
   useEffect(() => {
     if (open && msgCountRef.current === 0) {
       setMessages([
         {
           role: "assistant",
           id: 0,
-          text: `Hi ${userName}! I'm Sha, your personal assistant. I can help you check your tasks, notes, and finances. What would you like to know?`,
+          text: `Hi ${userName}! I'm Sha, your personal assistant. I can help with tasks, notes, finances, routines, workouts, and outfits. Type "help" to see all commands!`,
         },
       ]);
       setMsgId(1);
     }
   }, [open, userName]);
 
-  // Scroll to bottom whenever messages change
   const scrollToBottom = () =>
     setTimeout(
       () => endRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -194,7 +299,41 @@ export default function FloatingChatBot({ userName }: FloatingChatBotProps) {
       }
     }
 
-    // Intent: create task
+    // Intent: create MULTIPLE tasks
+    const multiTaskMatch = text.match(/^(?:add|create) tasks?[:\s]+(.+)/i);
+    if (multiTaskMatch && actor) {
+      const rawList = multiTaskMatch[1];
+      const titles = rawList
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (titles.length > 1) {
+        const today = new Date().toISOString().split("T")[0];
+        const results: string[] = [];
+        const errors: string[] = [];
+        await Promise.all(
+          titles.map(async (title) => {
+            try {
+              await actor.createTask(title, "", today);
+              results.push(title);
+            } catch {
+              errors.push(title);
+            }
+          }),
+        );
+        let reply = `✅ Added ${results.length} task${results.length !== 1 ? "s" : ""}:\n${results.map((t) => `- ${t}`).join("\n")}`;
+        if (errors.length > 0) {
+          reply += `\n\n⚠️ Failed to add:\n${errors.map((t) => `- ${t}`).join("\n")}`;
+        }
+        const botMsg: Message = { role: "assistant", text: reply, id: nextId };
+        setMessages((prev) => [...prev, botMsg]);
+        setMsgId(nextId + 1);
+        scrollToBottom();
+        return;
+      }
+    }
+
+    // Intent: create single task
     const taskMatch = text.match(
       /^(?:add|create|remind me to) task[:\s]+(.+)|^(?:remind me to) (.+)/i,
     );
@@ -226,12 +365,69 @@ export default function FloatingChatBot({ userName }: FloatingChatBotProps) {
       }
     }
 
+    // Intent: log gym workout
+    const gymMatch = text.match(/^(?:log workout|log gym|i did)[:\s]+(.+)/i);
+    if (gymMatch) {
+      const dayName = gymMatch[1].trim();
+      const today = new Date().toISOString().split("T")[0];
+      try {
+        const logs = getGymLogs();
+        logs.push({ date: today, dayName, timestamp: Date.now() });
+        localStorage.setItem("sha_gym_logs", JSON.stringify(logs));
+        const botMsg: Message = {
+          role: "assistant",
+          text: `✅ Logged workout: ${dayName} for today`,
+          id: nextId,
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        setMsgId(nextId + 1);
+        scrollToBottom();
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+
+    // Intent: add finance entry
+    const financeMatch = text.match(
+      /^(?:add|log) (expense|income)[:\s]+(.+?)\s+(\d+(?:\.\d+)?)\s*$/i,
+    );
+    if (financeMatch && actor) {
+      const entryType = financeMatch[1].toLowerCase() as "expense" | "income";
+      const category = financeMatch[2].trim();
+      const amount = Number.parseFloat(financeMatch[3]);
+      try {
+        const a = actor as any;
+        await a.createEntry(
+          category,
+          amount,
+          entryType,
+          category,
+          BigInt(Date.now()),
+        );
+        const botMsg: Message = {
+          role: "assistant",
+          text: `✅ Logged ${entryType}: ${category} — $${amount.toFixed(2)}`,
+          id: nextId,
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        setMsgId(nextId + 1);
+        scrollToBottom();
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+
     const response = generateResponse(text, {
       tasks,
       notes,
       entries,
       summary,
       userName,
+      routines,
+      plannerOutfits,
+      outfits,
     });
     const botMsg: Message = { role: "assistant", text: response, id: nextId };
     setMessages((prev) => [...prev, botMsg]);

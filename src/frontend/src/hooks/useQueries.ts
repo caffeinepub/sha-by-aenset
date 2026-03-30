@@ -13,7 +13,10 @@ import type {
   Task,
   UserProfileView,
 } from "../backend.d";
+import { CACHE_KEYS, localCache } from "../utils/localCache";
 import { useActor } from "./useActor";
+
+const STALE_TIME = 2 * 60 * 1000;
 
 function extractErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -26,10 +29,14 @@ export function useGetAllTasks() {
   return useQuery<Task[]>({
     queryKey: ["tasks"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllTasks();
+      if (!actor) return localCache.get<Task[]>(CACHE_KEYS.tasks) ?? [];
+      const data = await actor.getAllTasks();
+      localCache.set(CACHE_KEYS.tasks, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () => localCache.get<Task[]>(CACHE_KEYS.tasks) ?? [],
   });
 }
 
@@ -42,6 +49,7 @@ export function useListTasksByDate(date: string) {
       return actor.listTasksByDate(date);
     },
     enabled: !!actor && !isFetching && !!date,
+    staleTime: STALE_TIME,
   });
 }
 
@@ -103,10 +111,14 @@ export function useGetAllEntries() {
   return useQuery<Entry[]>({
     queryKey: ["entries"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllEntries();
+      if (!actor) return localCache.get<Entry[]>(CACHE_KEYS.entries) ?? [];
+      const data = await actor.getAllEntries();
+      localCache.set(CACHE_KEYS.entries, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () => localCache.get<Entry[]>(CACHE_KEYS.entries) ?? [],
   });
 }
 
@@ -119,6 +131,7 @@ export function useGetSummary() {
       return actor.getSummary();
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
   });
 }
 
@@ -175,6 +188,7 @@ export function useGetUserProfile() {
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
   });
 }
 
@@ -217,10 +231,14 @@ export function useGetAllNotes() {
   return useQuery<Note[]>({
     queryKey: ["notes"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllNotes();
+      if (!actor) return localCache.get<Note[]>(CACHE_KEYS.notes) ?? [];
+      const data = await actor.getAllNotes();
+      localCache.set(CACHE_KEYS.notes, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () => localCache.get<Note[]>(CACHE_KEYS.notes) ?? [],
   });
 }
 
@@ -285,10 +303,14 @@ export function useGetAllFolders() {
   return useQuery<Folder[]>({
     queryKey: ["folders"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllFolders();
+      if (!actor) return localCache.get<Folder[]>(CACHE_KEYS.folders) ?? [];
+      const data = await actor.getAllFolders();
+      localCache.set(CACHE_KEYS.folders, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () => localCache.get<Folder[]>(CACHE_KEYS.folders) ?? [],
   });
 }
 
@@ -323,10 +345,14 @@ export function useGetAllOutfits() {
   return useQuery<Outfit[]>({
     queryKey: ["outfits"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllOutfits();
+      if (!actor) return localCache.get<Outfit[]>(CACHE_KEYS.outfits) ?? [];
+      const data = await actor.getAllOutfits();
+      localCache.set(CACHE_KEYS.outfits, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () => localCache.get<Outfit[]>(CACHE_KEYS.outfits) ?? [],
   });
 }
 
@@ -400,10 +426,16 @@ export function useGetAllClothingItems() {
   return useQuery<ClothingItem[]>({
     queryKey: ["clothing"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllClothingItems();
+      if (!actor)
+        return localCache.get<ClothingItem[]>(CACHE_KEYS.clothing) ?? [];
+      const data = await actor.getAllClothingItems();
+      localCache.set(CACHE_KEYS.clothing, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () =>
+      localCache.get<ClothingItem[]>(CACHE_KEYS.clothing) ?? [],
   });
 }
 
@@ -465,10 +497,18 @@ export function useGetAllPlannerDayOutfits() {
   return useQuery<PlannerDayOutfit[]>({
     queryKey: ["plannerOutfits"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllPlannerDayOutfits();
+      if (!actor)
+        return (
+          localCache.get<PlannerDayOutfit[]>(CACHE_KEYS.plannerOutfits) ?? []
+        );
+      const data = await actor.getAllPlannerDayOutfits();
+      localCache.set(CACHE_KEYS.plannerOutfits, data);
+      return data;
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+    initialData: () =>
+      localCache.get<PlannerDayOutfit[]>(CACHE_KEYS.plannerOutfits) ?? [],
   });
 }
 
@@ -509,6 +549,7 @@ export function useGetAllRoutines() {
       return actor.getAllRoutines();
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
   });
 }
 
@@ -577,5 +618,6 @@ export function useGetAllRoutineCompletions() {
       return actor.getAllRoutineCompletions();
     },
     enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
   });
 }

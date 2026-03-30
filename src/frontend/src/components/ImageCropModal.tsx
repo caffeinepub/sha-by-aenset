@@ -1,11 +1,4 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Crop, X } from "lucide-react";
 import {
   useCallback,
@@ -14,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -34,7 +28,6 @@ interface CropBox {
 }
 
 const MIN_CROP = 40;
-
 type Handle = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r" | null;
 
 export default function ImageCropModal({
@@ -46,11 +39,8 @@ export default function ImageCropModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Image pan/zoom state
   const [imgOffset, setImgOffset] = useState<Point>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-
-  // Crop box state (in container coords)
   const [cropBox, setCropBox] = useState<CropBox>({
     x: 20,
     y: 20,
@@ -58,8 +48,8 @@ export default function ImageCropModal({
     h: 240,
   });
   const [containerSize, setContainerSize] = useState({ w: 320, h: 320 });
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Interaction tracking
   const dragging = useRef<{ startPt: Point; startOffset: Point } | null>(null);
   const resizing = useRef<{
     handle: Handle;
@@ -70,9 +60,6 @@ export default function ImageCropModal({
     null,
   );
 
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  // Load image and initialize
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
@@ -82,7 +69,6 @@ export default function ImageCropModal({
     img.src = imageSrc;
   }, [imageSrc]);
 
-  // Measure container size (runs once on mount)
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -90,7 +76,6 @@ export default function ImageCropModal({
     const w = rect.width || 320;
     const h = rect.height || 320;
     setContainerSize({ w, h });
-    // Initial crop: center 70% of container
     const cw = Math.round(w * 0.7);
     const ch = Math.round(h * 0.7);
     setCropBox({
@@ -101,7 +86,20 @@ export default function ImageCropModal({
     });
   }, []);
 
-  // Draw to canvas
+  const getImageRect = useCallback(() => {
+    const img = imgRef.current;
+    const { w: cw, h: ch } = containerSize;
+    if (!img) return { drawX: 0, drawY: 0, drawW: cw, drawH: ch };
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    const fitScale = Math.max(cw / iw, ch / ih);
+    const drawW = iw * fitScale * scale;
+    const drawH = ih * fitScale * scale;
+    const drawX = (cw - drawW) / 2 + imgOffset.x;
+    const drawY = (ch - drawH) / 2 + imgOffset.y;
+    return { drawX, drawY, drawW, drawH };
+  }, [containerSize, scale, imgOffset]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -112,37 +110,24 @@ export default function ImageCropModal({
     const { w, h } = containerSize;
     canvas.width = w;
     canvas.height = h;
-
-    // Draw image with pan/zoom
     ctx.clearRect(0, 0, w, h);
-    ctx.save();
-    ctx.translate(imgOffset.x, imgOffset.y);
-    ctx.scale(scale, scale);
-    // Center the image initially
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
-    const fitScale = Math.max(w / iw, h / ih);
-    const ox = (w / fitScale - iw) / 2;
-    const oy = (h / fitScale - ih) / 2;
-    ctx.drawImage(img, ox, oy, iw, ih);
-    ctx.restore();
 
-    // Dim outside crop area
+    const { drawX, drawY, drawW, drawH } = getImageRect();
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "rgba(0,0,0,1)";
-    ctx.fillRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.rect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
+    ctx.fill("evenodd");
     ctx.restore();
 
-    // Crop frame border
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,0.9)";
     ctx.lineWidth = 2;
     ctx.strokeRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
 
-    // Rule of thirds lines
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
@@ -160,46 +145,36 @@ export default function ImageCropModal({
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Corner handles
-    const hs = 10;
     ctx.strokeStyle = "rgba(255,255,255,1)";
     ctx.lineWidth = 3;
+    const hs = 12;
     const corners: [number, number, number, number][] = [
-      [cropBox.x, cropBox.y, hs, 0],
-      [cropBox.x + cropBox.w, cropBox.y, -hs, 0],
-      [cropBox.x, cropBox.y + cropBox.h, hs, 0],
-      [cropBox.x + cropBox.w, cropBox.y + cropBox.h, -hs, 0],
+      [cropBox.x, cropBox.y, hs, hs],
+      [cropBox.x + cropBox.w, cropBox.y, -hs, hs],
+      [cropBox.x, cropBox.y + cropBox.h, hs, -hs],
+      [cropBox.x + cropBox.w, cropBox.y + cropBox.h, -hs, -hs],
     ];
-    const cornerDirs: [number, number][] = [
-      [0, hs],
-      [0, hs],
-      [0, -hs],
-      [0, -hs],
-    ];
-    corners.forEach(([cx, cy, dx], i) => {
+    for (const [cx, cy, dx, dy] of corners) {
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + dx, cy);
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx, cy + cornerDirs[i][1]);
+      ctx.moveTo(cx + dx, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy);
       ctx.stroke();
-    });
+    }
     ctx.restore();
-  }, [imageLoaded, imgOffset, scale, cropBox, containerSize]);
+  }, [imageLoaded, cropBox, containerSize, getImageRect]);
 
   const getHandle = useCallback(
     (pt: Point): Handle => {
       const { x, y, w, h } = cropBox;
       const HIT = 18;
-      const inX = pt.x >= x - HIT && pt.x <= x + w + HIT;
-      const inY = pt.y >= y - HIT && pt.y <= y + h + HIT;
-      if (!inX || !inY) return null;
-
       const nearL = Math.abs(pt.x - x) < HIT;
       const nearR = Math.abs(pt.x - (x + w)) < HIT;
       const nearT = Math.abs(pt.y - y) < HIT;
       const nearB = Math.abs(pt.y - (y + h)) < HIT;
-
+      const inX = pt.x >= x - HIT && pt.x <= x + w + HIT;
+      const inY = pt.y >= y - HIT && pt.y <= y + h + HIT;
+      if (!inX || !inY) return null;
       if (nearL && nearT) return "tl";
       if (nearR && nearT) return "tr";
       if (nearL && nearB) return "bl";
@@ -242,7 +217,6 @@ export default function ImageCropModal({
       return;
     }
     if (isInsideCrop(pt)) {
-      // Move crop box
       resizing.current = {
         handle: null,
         startPt: pt,
@@ -250,7 +224,6 @@ export default function ImageCropModal({
       };
       return;
     }
-    // Pan image
     dragging.current = { startPt: pt, startOffset: { ...imgOffset } };
   };
 
@@ -265,14 +238,11 @@ export default function ImageCropModal({
     const dx = pt.x - startPt.x;
     const dy = pt.y - startPt.y;
     let { x, y, w, h } = startBox;
-
     if (handle === null) {
-      // Move crop
       x = Math.max(0, Math.min(cw - w, x + dx));
       y = Math.max(0, Math.min(ch - h, y + dy));
       return { x, y, w, h };
     }
-
     if (handle === "tl") {
       x += dx;
       y += dy;
@@ -300,8 +270,6 @@ export default function ImageCropModal({
     } else if (handle === "r") {
       w += dx;
     }
-
-    // Clamp
     if (w < MIN_CROP) {
       if (handle?.includes("l")) x = startBox.x + startBox.w - MIN_CROP;
       w = MIN_CROP;
@@ -314,34 +282,30 @@ export default function ImageCropModal({
     y = Math.max(0, y);
     if (x + w > cw) w = cw - x;
     if (y + h > ch) h = ch - y;
-
     return { x, y, w, h };
   };
 
   const onPointerMove = (e: React.MouseEvent | React.TouchEvent) => {
     if ("touches" in e && (e as React.TouchEvent).touches.length === 2) return;
     const pt = getEventPoint(e);
-
-    if (resizing.current !== undefined && resizing.current !== null) {
+    if (resizing.current !== null && resizing.current !== undefined) {
       const { handle, startPt, startBox } = resizing.current;
-      const next = applyResize(
-        handle,
-        pt,
-        startPt,
-        startBox,
-        containerSize.w,
-        containerSize.h,
+      setCropBox(
+        applyResize(
+          handle,
+          pt,
+          startPt,
+          startBox,
+          containerSize.w,
+          containerSize.h,
+        ),
       );
-      setCropBox(next);
       return;
     }
-
     if (dragging.current) {
-      const dx = pt.x - dragging.current.startPt.x;
-      const dy = pt.y - dragging.current.startPt.y;
       setImgOffset({
-        x: dragging.current.startOffset.x + dx,
-        y: dragging.current.startOffset.y + dy,
+        x: dragging.current.startOffset.x + (pt.x - dragging.current.startPt.x),
+        y: dragging.current.startOffset.y + (pt.y - dragging.current.startPt.y),
       });
     }
   };
@@ -361,8 +325,7 @@ export default function ImageCropModal({
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      pinching.current = { startDist: dist, startScale: scale };
+      pinching.current = { startDist: Math.hypot(dx, dy), startScale: scale };
     } else {
       onPointerDown(e);
     }
@@ -372,8 +335,7 @@ export default function ImageCropModal({
     if (e.touches.length === 2 && pinching.current) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const ratio = dist / pinching.current.startDist;
+      const ratio = Math.hypot(dx, dy) / pinching.current.startDist;
       setScale(Math.max(0.5, Math.min(5, pinching.current.startScale * ratio)));
     } else {
       onPointerMove(e);
@@ -383,74 +345,67 @@ export default function ImageCropModal({
   const handleConfirm = () => {
     const img = imgRef.current;
     if (!img) return;
-
+    const { drawX, drawY, drawW, drawH } = getImageRect();
+    const scaleX = img.naturalWidth / drawW;
+    const scaleY = img.naturalHeight / drawH;
+    const srcX = (cropBox.x - drawX) * scaleX;
+    const srcY = (cropBox.y - drawY) * scaleY;
+    const srcW = cropBox.w * scaleX;
+    const srcH = cropBox.h * scaleY;
     const offscreen = document.createElement("canvas");
     offscreen.width = cropBox.w;
     offscreen.height = cropBox.h;
     const ctx = offscreen.getContext("2d");
     if (!ctx) return;
-
-    // Replicate the canvas drawing math to map crop box back to image coords
-    const { w: cw, h: ch } = containerSize;
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
-    const fitScale = Math.max(cw / iw, ch / ih);
-
-    // Image drawn at: translate(imgOffset.x, imgOffset.y) scale(scale) then drawImage at (ox*fitScale, oy*fitScale, iw*fitScale, ih*fitScale)
-    // Actual pixel in container: imgOffset + scale * (fitScale * imagePixel + centering)
-    // Reverse: imagePixel = (containerPixel - imgOffset) / scale / fitScale - centering
-    const ox = (cw / fitScale - iw) / 2;
-    const oy = (ch / fitScale - ih) / 2;
-
-    // Map crop box corners to image pixel space
-    const mapToImg = (cx: number, cy: number) => {
-      const ix = (cx - imgOffset.x) / scale / fitScale - ox;
-      const iy = (cy - imgOffset.y) / scale / fitScale - oy;
-      return { ix, iy };
-    };
-
-    const topLeft = mapToImg(cropBox.x, cropBox.y);
-    const srcW = cropBox.w / scale / fitScale;
-    const srcH = cropBox.h / scale / fitScale;
-
-    ctx.drawImage(
-      img,
-      topLeft.ix,
-      topLeft.iy,
-      srcW,
-      srcH,
-      0,
-      0,
-      cropBox.w,
-      cropBox.h,
-    );
-
-    const dataUrl = offscreen.toDataURL("image/jpeg", 0.92);
-    onConfirm(dataUrl);
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, cropBox.w, cropBox.h);
+    onConfirm(offscreen.toDataURL("image/jpeg", 0.92));
   };
 
-  return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent
-        className="max-w-[90vw] w-[380px] p-4 gap-3"
-        data-ocid="crop_modal.dialog"
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-end sm:items-center justify-center"
+      style={{ zIndex: 9999 }}
+      data-ocid="crop_modal.dialog"
+    >
+      {/* backdrop */}
+      <div
+        role="button"
+        tabIndex={-1}
+        aria-label="Close"
+        className="absolute inset-0 bg-black/70"
+        onClick={onCancel}
+        onKeyDown={(e) => e.key === "Escape" && onCancel()}
+      />
+      {/* panel */}
+      <div
+        className="relative bg-background w-full sm:max-w-[400px] rounded-t-3xl sm:rounded-2xl shadow-2xl p-4 flex flex-col gap-3"
+        style={{ zIndex: 10000 }}
+        onKeyDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <DialogHeader>
-          <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
             <Crop className="w-4 h-4" />
             Crop & Adjust
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="text-xs text-muted-foreground -mt-1">
-          Drag to pan · Scroll/pinch to zoom · Drag edges or corners to resize
-          crop
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          Drag image to pan · Scroll/pinch to zoom · Drag edges or corners to
+          resize crop
+        </p>
 
         <div
           ref={containerRef}
-          className="relative w-full rounded-xl overflow-hidden bg-black select-none"
-          style={{ height: "320px", touchAction: "none" }}
+          className="relative w-full rounded-xl overflow-hidden bg-neutral-200 select-none"
+          style={{ height: "300px", touchAction: "none" }}
         >
           {imageLoaded ? (
             <canvas
@@ -473,7 +428,7 @@ export default function ImageCropModal({
           )}
         </div>
 
-        <DialogFooter className="flex-row gap-2 justify-end">
+        <div className="flex gap-2 justify-end pt-1">
           <Button
             variant="outline"
             size="sm"
@@ -493,8 +448,9 @@ export default function ImageCropModal({
             <Crop className="w-3.5 h-3.5" />
             Crop & Use
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }

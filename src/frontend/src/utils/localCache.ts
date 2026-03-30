@@ -1,15 +1,29 @@
+// Custom JSON serializer/deserializer that handles BigInt values
+// BigInts are serialized as "__bigint__<value>" strings and restored on parse
+function replacer(_key: string, value: unknown): unknown {
+  if (typeof value === "bigint") return `__bigint__${value.toString()}`;
+  return value;
+}
+
+function reviver(_key: string, value: unknown): unknown {
+  if (typeof value === "string" && value.startsWith("__bigint__")) {
+    return BigInt(value.slice(10));
+  }
+  return value;
+}
+
 export const localCache = {
   get<T>(key: string): T | null {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : null;
+      return raw ? (JSON.parse(raw, reviver) as T) : null;
     } catch {
       return null;
     }
   },
   set<T>(key: string, value: T): void {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(value, replacer));
     } catch {}
   },
   remove(key: string): void {

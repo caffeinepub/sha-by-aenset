@@ -48,16 +48,29 @@ type Priority = "None" | "High" | "Medium" | "Low";
 type Recurring = "None" | "Daily" | "Weekly" | "Monthly";
 interface TaskMeta {
   priority: Priority;
-  dueTime: string;
+  startTime: string;
+  endTime: string;
   recurring: Recurring;
 }
 const TASK_META_KEY = "sha_task_meta";
 function getTaskMeta(taskId: string): TaskMeta {
   try {
     const all = JSON.parse(localStorage.getItem(TASK_META_KEY) || "{}");
-    return all[taskId] || { priority: "None", dueTime: "", recurring: "None" };
+    const stored = all[taskId];
+    if (!stored)
+      return {
+        priority: "None",
+        startTime: "",
+        endTime: "",
+        recurring: "None",
+      };
+    // legacy: map dueTime -> startTime
+    if (stored.dueTime && !stored.startTime) stored.startTime = stored.dueTime;
+    if (!stored.startTime) stored.startTime = "";
+    if (!stored.endTime) stored.endTime = "";
+    return stored;
   } catch {
-    return { priority: "None", dueTime: "", recurring: "None" };
+    return { priority: "None", startTime: "", endTime: "", recurring: "None" };
   }
 }
 function setTaskMeta(taskId: string, meta: TaskMeta) {
@@ -87,9 +100,11 @@ export default function PlannerTab() {
   );
   const [newTitle, setNewTitle] = useState("");
   const [outfitPickerOpen, setOutfitPickerOpen] = useState(false);
+  const [previewOutfit, setPreviewOutfit] = useState<Outfit | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newPriority, setNewPriority] = useState<Priority>("None");
-  const [newDueTime, setNewDueTime] = useState("");
+  const [newStartTime, setNewStartTime] = useState("");
+  const [newEndTime, setNewEndTime] = useState("");
   const [newRecurring, setNewRecurring] = useState<Recurring>("None");
   const [dateHint, setDateHint] = useState("");
   const [rawDateInput, setRawDateInput] = useState("");
@@ -122,16 +137,18 @@ export default function PlannerTab() {
   }, [allTasks]);
 
   const plannerOutfitMap = useMemo(() => {
-    const map = new Map<string, bigint>();
+    const map = new Map<string, string>();
     for (const po of plannerOutfits as PlannerDayOutfit[]) {
-      map.set(po.date, po.outfitId);
+      map.set(po.date, po.outfitId.toString());
     }
     return map;
   }, [plannerOutfits]);
 
   const selectedDayOutfitId = plannerOutfitMap.get(selectedDate);
   const selectedDayOutfit = selectedDayOutfitId
-    ? (allOutfits as Outfit[]).find((o) => o.id === selectedDayOutfitId)
+    ? (allOutfits as Outfit[]).find(
+        (o) => o.id.toString() === selectedDayOutfitId,
+      )
     : null;
 
   const prevMonth = () => {
@@ -162,17 +179,22 @@ export default function PlannerTab() {
     }
     if (
       task &&
-      (newPriority !== "None" || newDueTime || newRecurring !== "None")
+      (newPriority !== "None" ||
+        newStartTime ||
+        newEndTime ||
+        newRecurring !== "None")
     ) {
       setTaskMeta(task.id.toString(), {
         priority: newPriority,
-        dueTime: newDueTime,
+        startTime: newStartTime,
+        endTime: newEndTime,
         recurring: newRecurring,
       });
     }
     setNewTitle("");
     setNewPriority("None");
-    setNewDueTime("");
+    setNewStartTime("");
+    setNewEndTime("");
     setNewRecurring("None");
     setShowAdvanced(false);
     setDateHint("");
@@ -419,9 +441,14 @@ export default function PlannerTab() {
                                   {meta.priority}
                                 </span>
                               )}
-                              {meta.dueTime && (
+                              {meta.startTime && (
                                 <span className="text-[9px] text-muted-foreground">
-                                  {meta.dueTime}
+                                  ▶ {meta.startTime}
+                                </span>
+                              )}
+                              {meta.endTime && (
+                                <span className="text-[9px] text-muted-foreground">
+                                  ⏹ {meta.endTime}
                                 </span>
                               )}
                               {meta.recurring !== "None" && (
@@ -518,13 +545,25 @@ export default function PlannerTab() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-16 shrink-0">
-                        Time
+                        Start Time
                       </span>
                       <Input
                         data-ocid="planner.input"
                         type="time"
-                        value={newDueTime}
-                        onChange={(e) => setNewDueTime(e.target.value)}
+                        value={newStartTime}
+                        onChange={(e) => setNewStartTime(e.target.value)}
+                        className="h-7 text-xs flex-1"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-16 shrink-0">
+                        End Time
+                      </span>
+                      <Input
+                        data-ocid="planner.input"
+                        type="time"
+                        value={newEndTime}
+                        onChange={(e) => setNewEndTime(e.target.value)}
                         className="h-7 text-xs flex-1"
                       />
                     </div>
@@ -600,7 +639,13 @@ export default function PlannerTab() {
                 </p>
                 {selectedDayOutfit ? (
                   <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                    <button
+                      type="button"
+                      data-ocid="planner.open_modal_button"
+                      onClick={() => setPreviewOutfit(selectedDayOutfit)}
+                      className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-accent transition-all"
+                      aria-label="Preview outfit"
+                    >
                       <OutfitCollage
                         outfitId={selectedDayOutfit.id.toString()}
                         photoUrl={selectedDayOutfit.photoUrl}
@@ -608,7 +653,7 @@ export default function PlannerTab() {
                         resolvePhoto={(url) => url}
                         className="rounded-lg"
                       />
-                    </div>
+                    </button>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
                         {selectedDayOutfit.name}
@@ -724,6 +769,64 @@ export default function PlannerTab() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Outfit Preview Modal */}
+      {createPortal(
+        <AnimatePresence>
+          {previewOutfit && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/70"
+                style={{ zIndex: 300 }}
+                onClick={() => setPreviewOutfit(null)}
+              />
+              <motion.div
+                data-ocid="planner.modal"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[360px] bg-background border border-border rounded-2xl overflow-hidden shadow-2xl"
+                style={{ zIndex: 301 }}
+              >
+                <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                  <h3 className="font-bold text-base text-foreground">
+                    {previewOutfit.name}
+                  </h3>
+                  <button
+                    type="button"
+                    data-ocid="planner.close_button"
+                    onClick={() => setPreviewOutfit(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="w-full" style={{ height: 280 }}>
+                  <OutfitCollage
+                    outfitId={previewOutfit.id.toString()}
+                    photoUrl={previewOutfit.photoUrl}
+                    clothingItems={clothingItems as ClothingItem[]}
+                    resolvePhoto={(url) => url}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {previewOutfit.occasion ? (
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-muted-foreground">
+                      {previewOutfit.occasion}
+                    </p>
+                  </div>
+                ) : null}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }

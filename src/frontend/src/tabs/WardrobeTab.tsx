@@ -57,6 +57,7 @@ const MALE_CATEGORIES = [
   "T-Shirt",
   "Suit",
   "Sherwani",
+  "Shorts",
   "Trousers",
   "Jeans",
   "Blazer",
@@ -73,6 +74,7 @@ const FEMALE_CATEGORIES = [
   "Lehenga",
   "Dress",
   "Top",
+  "Shorts",
   "Skirt",
   "Jeans",
   "Jacket",
@@ -83,6 +85,7 @@ const FEMALE_CATEGORIES = [
 ];
 
 const DEFAULT_CATEGORIES = [
+  "Shorts",
   "Tops",
   "Bottoms",
   "Dress",
@@ -649,26 +652,28 @@ function MyClothesSection({ gender }: { gender: Gender }) {
                       </span>
                     )}
                   </Label>
-                  <Select
-                    value={form.category}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, category: v }))
-                    }
+                  <div
+                    className="flex gap-2 overflow-x-auto pb-1"
+                    style={{ scrollbarWidth: "none" }}
+                    data-ocid="wardrobe.select"
                   >
-                    <SelectTrigger
-                      data-ocid="wardrobe.select"
-                      className="h-9 text-sm"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({ ...f, category: cat }))
+                        }
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                          form.category === cat
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted text-muted-foreground border-transparent hover:border-primary/50"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <PhotoUpload
                   value={form.photoUrl}
@@ -737,7 +742,6 @@ function OutfitsSection({ gender }: { gender: Gender }) {
     photoUrl: "",
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on every render
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   });

@@ -19,6 +19,14 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useActor } from "./hooks/useActor";
 import { useBackgroundContrast } from "./hooks/useBackgroundContrast";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import {
+  useGetAllOutfits,
+  useGetAllPlannerDayOutfits,
+  useGetAllRoutineCompletions,
+  useGetAllRoutines,
+  useGetAllTasks,
+} from "./hooks/useQueries";
+import { useTaskNotifications } from "./hooks/useTaskNotifications";
 import AuthScreen from "./screens/AuthScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import FinanceTab from "./tabs/FinanceTab";
@@ -125,6 +133,12 @@ function AppContent() {
   } = useInternetIdentity();
   const { user, setUser, isLoading, setIsLoading } = useAuth();
   const { t, lang } = useI18n();
+  const { data: allTasksForNotif } = useGetAllTasks();
+  const { data: allRoutines = [] } = useGetAllRoutines();
+  const { data: allRoutineCompletions = [] } = useGetAllRoutineCompletions();
+  const { data: allPlannerOutfits = [] } = useGetAllPlannerDayOutfits();
+  const { data: allOutfits = [] } = useGetAllOutfits();
+  useTaskNotifications(allTasksForNotif);
   const { setIsDark } = useTheme();
   const setIsDarkRef = useRef(setIsDark);
   useEffect(() => {
@@ -161,7 +175,20 @@ function AppContent() {
       setIsLoading(false);
       return;
     }
-    if (isFetching) return;
+
+    // If actor is still loading but we have a cached profile, render from cache immediately
+    if (isFetching && !actor) {
+      const cached = localCache.get<UserProfileView>(CACHE_KEYS.profile);
+      if (cached) {
+        setUser(cached);
+        setIsLoading(false);
+        if (cached.preferences?.darkMode !== undefined) {
+          setIsDarkRef.current(cached.preferences.darkMode);
+        }
+      }
+      return;
+    }
+
     if (!actor) {
       setIsLoading(false);
       return;
@@ -271,7 +298,8 @@ function AppContent() {
     }
   };
 
-  if (isInitializing || isFetching) {
+  // Only block on isInitializing (II SDK loading), not isFetching (actor init)
+  if (isInitializing) {
     return <SplashScreen />;
   }
 
@@ -455,7 +483,33 @@ function AppContent() {
         </div>
       </nav>
 
-      <MemoFloatingChatBot userName={user.name} />
+      <MemoFloatingChatBot
+        userName={user.name}
+        routines={(allRoutines as any[]).map((r: any) => {
+          const todayStr2 = new Date().toISOString().split("T")[0];
+          const todayCompletion = (allRoutineCompletions as any[]).find(
+            (c: any) => c.date === todayStr2,
+          );
+          const completedIds: bigint[] =
+            todayCompletion?.completedRoutineIds ?? [];
+          return {
+            id: r.id,
+            name: r.name,
+            timeOfDay: r.timeOfDay,
+            completedToday: completedIds.some((cid) => cid === r.id),
+          };
+        })}
+        plannerOutfits={(allPlannerOutfits as any[]).map((po: any) => ({
+          date: po.date,
+          outfitId: po.outfitId,
+        }))}
+        outfits={(allOutfits as any[]).map((o: any) => ({
+          id: o.id,
+          name: o.name,
+          occasion: o.occasion,
+          photoUrl: o.photoUrl,
+        }))}
+      />
     </div>
   );
 }
