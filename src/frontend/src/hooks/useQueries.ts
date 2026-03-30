@@ -621,3 +621,32 @@ export function useGetAllRoutineCompletions() {
     staleTime: STALE_TIME,
   });
 }
+
+// ── Gym State hooks ────────────────────────────────────────────────────────────────────────
+
+export function useGetGymState() {
+  const { actor, isFetching } = useActor();
+  return useQuery<string | null>({
+    queryKey: ["gymState"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getUserGymState();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useSaveGymState() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (json: string) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.saveUserGymState(json);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gymState"] }),
+    onError: (e) =>
+      console.error("Failed to save gym state to ICP:", extractErrorMessage(e)),
+  });
+}

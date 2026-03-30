@@ -140,4 +140,6 @@ export interface backendInterface {
     setRoutineCompletion(date: string, completedRoutineIds: Array<bigint>): Promise<RoutineCompletion>;
     getRoutineCompletion(date: string): Promise<RoutineCompletion | null>;
     getAllRoutineCompletions(): Promise<Array<RoutineCompletion>>;
+    saveUserGymState(json: string): Promise<void>;
+    getUserGymState(): Promise<string | null>;
 }

@@ -31,6 +31,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { useGetGymState, useSaveGymState } from "../hooks/useQueries";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -386,11 +387,50 @@ export default function GymTab() {
     load(KEYS.sessions, []),
   );
 
-  // persist on change
+  // persist on change (localStorage for instant access)
   useEffect(() => save(KEYS.days, days), [days]);
   useEffect(() => save(KEYS.exercises, exercises), [exercises]);
   useEffect(() => save(KEYS.schedule, schedule), [schedule]);
   useEffect(() => save(KEYS.sessions, sessions), [sessions]);
+
+  // ICP backend persistence for cross-device sync
+  const { data: icpGymState, isSuccess: icpLoaded } = useGetGymState();
+  const saveGymState = useSaveGymState();
+  const [icpInitialized, setIcpInitialized] = useState(false);
+
+  // Load from ICP on mount (once, after ICP data arrives)
+  useEffect(() => {
+    if (!icpLoaded || icpInitialized) return;
+    if (icpGymState) {
+      try {
+        const state = JSON.parse(icpGymState) as {
+          days?: GymDay[];
+          exercises?: GymExercise[];
+          schedule?: GymWeekSchedule;
+          sessions?: GymSession[];
+        };
+        if (state.days) setDays(state.days);
+        if (state.exercises) setExercises(state.exercises);
+        if (state.schedule) setSchedule(state.schedule);
+        if (state.sessions) setSessions(state.sessions);
+      } catch {}
+    }
+    setIcpInitialized(true);
+  }, [icpLoaded, icpGymState, icpInitialized]);
+
+  // Sync to ICP whenever state changes (debounced, in background)
+  const icpSyncTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!icpInitialized) return;
+    if (icpSyncTimeout.current) clearTimeout(icpSyncTimeout.current);
+    icpSyncTimeout.current = setTimeout(() => {
+      const json = JSON.stringify({ days, exercises, schedule, sessions });
+      saveGymState.mutate(json);
+    }, 2000); // 2-second debounce
+    return () => {
+      if (icpSyncTimeout.current) clearTimeout(icpSyncTimeout.current);
+    };
+  }, [days, exercises, schedule, sessions, icpInitialized, saveGymState]);
 
   // ── 7-day reset logic ──
   const [showResetDialog, setShowResetDialog] = useState(false);

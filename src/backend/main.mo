@@ -156,6 +156,7 @@ actor {
   stable var userPlannerOutfits : Map.Map<User, Map.Map<Text, PlannerDayOutfit>> = Map.empty();
   stable var userRoutines : Map.Map<User, Map.Map<Nat, Routine>> = Map.empty();
   stable var userRoutineCompletions : Map.Map<User, Map.Map<Text, RoutineCompletion>> = Map.empty();
+  stable var userGymState : Map.Map<User, Text> = Map.empty();
 
   // ── Migration (runs once after upgrade) ──────────────────────────────────────────
 
@@ -699,5 +700,17 @@ actor {
   public query ({ caller }) func getAllRoutineCompletions() : async [RoutineCompletion] {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) { Runtime.trap("Unauthorized") };
     getUserRoutineCompletions(caller).values().toArray();
+  };
+
+  // ── Gym State (persisted as JSON blob per user) ───────────────────────────────
+
+  public shared ({ caller }) func saveUserGymState(json : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) { Runtime.trap("Unauthorized") };
+    userGymState.add(caller, json);
+  };
+
+  public query ({ caller }) func getUserGymState() : async ?Text {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) { Runtime.trap("Unauthorized") };
+    userGymState.get(caller);
   };
 };

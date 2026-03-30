@@ -40,6 +40,7 @@ import {
   useSetPlannerDayOutfit,
   useUpdateTask,
 } from "../hooks/useQueries";
+import { useImageUpload } from "../hooks/useStorageUpload";
 import { parseDateInput } from "../utils/dateParser";
 import RoutineSection from "./RoutineSection";
 import { OutfitCollage } from "./WardrobeTab";
@@ -91,6 +92,7 @@ type PlannerView = "tasks" | "routine";
 
 export default function PlannerTab() {
   const { t } = useI18n();
+  const { resolvePhoto } = useImageUpload();
   const today = new Date();
   const [plannerView, setPlannerView] = useState<PlannerView>("tasks");
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -650,7 +652,7 @@ export default function PlannerTab() {
                         outfitId={selectedDayOutfit.id.toString()}
                         photoUrl={selectedDayOutfit.photoUrl}
                         clothingItems={clothingItems as ClothingItem[]}
-                        resolvePhoto={(url) => url}
+                        resolvePhoto={resolvePhoto}
                         className="rounded-lg"
                       />
                     </button>
@@ -745,7 +747,7 @@ export default function PlannerTab() {
                                 outfitId={outfit.id.toString()}
                                 photoUrl={outfit.photoUrl}
                                 clothingItems={clothingItems as ClothingItem[]}
-                                resolvePhoto={(url) => url}
+                                resolvePhoto={resolvePhoto}
                                 className="rounded-lg"
                               />
                             </div>
@@ -810,7 +812,7 @@ export default function PlannerTab() {
                     outfitId={previewOutfit.id.toString()}
                     photoUrl={previewOutfit.photoUrl}
                     clothingItems={clothingItems as ClothingItem[]}
-                    resolvePhoto={(url) => url}
+                    resolvePhoto={resolvePhoto}
                     className="w-full h-full object-cover"
                   />
                 </div>

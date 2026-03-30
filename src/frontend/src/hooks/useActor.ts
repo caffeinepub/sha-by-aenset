@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { backendInterface } from "../backend";
 import { createActorWithConfig } from "../config";
 import { getSecretParameter } from "../utils/urlParams";
@@ -9,8 +9,6 @@ const ACTOR_QUERY_KEY = "actor";
 export function useActor() {
   const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
-  const prevActorRef = useRef<backendInterface | null>(null);
-
   const actorQuery = useQuery<backendInterface>({
     queryKey: [ACTOR_QUERY_KEY, identity?.getPrincipal().toString()],
     queryFn: async () => {
@@ -31,18 +29,21 @@ export function useActor() {
       await actor._initializeAccessControlWithSecret(adminToken);
       return actor;
     },
-    staleTime: Number.POSITIVE_INFINITY,
+    // Re-register after 3 minutes so post-deployment auth resets are recovered automatically.
+    staleTime: 3 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     enabled: true,
   });
 
-  // Only invalidate queries when the actor identity actually changes (not on every render)
+  // When the actor changes, lazily invalidate all dependent queries so they refetch
+  // when their component is next focused/mounted -- not all at once (avoids flooding).
   useEffect(() => {
-    const actor = actorQuery.data;
-    if (actor && actor !== prevActorRef.current) {
-      prevActorRef.current = actor;
-      // Only invalidate – don't force refetch. React Query will refetch stale queries lazily.
+    if (actorQuery.data) {
       queryClient.invalidateQueries({
-        predicate: (query) => !query.queryKey.includes(ACTOR_QUERY_KEY),
+        predicate: (query) => {
+          return !query.queryKey.includes(ACTOR_QUERY_KEY);
+        },
       });
     }
   }, [actorQuery.data, queryClient]);

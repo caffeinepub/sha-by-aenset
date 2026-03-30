@@ -150,6 +150,8 @@ export const idlService = IDL.Service({
   'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
   'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
   'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
+  'saveUserGymState' : IDL.Func([IDL.Text], [], []),
+  'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -305,6 +307,8 @@ export const idlFactory = ({ IDL }) => {
     'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
     'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
     'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
+    'saveUserGymState' : IDL.Func([IDL.Text], [], []),
+    'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   });
 };
 

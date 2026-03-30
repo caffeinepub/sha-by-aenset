@@ -10,7 +10,17 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, LogOut, Trash2, Upload } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Loader2,
+  LogOut,
+  Plus,
+  Quote,
+  Star,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -195,6 +205,35 @@ async function compressImageToDataUrl(
   });
 }
 
+// ─── Quote types & helpers ─────────────────────────────────────────────────────
+export interface UserQuote {
+  id: string;
+  text: string;
+  isActive: boolean;
+}
+
+const QUOTES_KEY = "user_quotes";
+
+export function getQuotes(): UserQuote[] {
+  try {
+    return JSON.parse(localStorage.getItem(QUOTES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveQuotes(quotes: UserQuote[]) {
+  localStorage.setItem(QUOTES_KEY, JSON.stringify(quotes));
+  window.dispatchEvent(new Event("quotesChanged"));
+}
+
+// ─── ProfilePicture helpers ────────────────────────────────────────────────────
+const PROFILE_PIC_KEY = "profile_picture";
+
+export function getProfilePicture(): string {
+  return localStorage.getItem(PROFILE_PIC_KEY) || "";
+}
+
 export default function ProfileTab({
   onLogout,
   onBackgroundChange,
@@ -228,6 +267,16 @@ export default function ProfileTab({
   );
   const fileRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  // Profile picture state
+  const [profilePic, setProfilePic] = useState<string>(() =>
+    getProfilePicture(),
+  );
+  const picInputRef = useRef<HTMLInputElement>(null);
+
+  // Quotes state
+  const [quotes, setQuotes] = useState<UserQuote[]>(() => getQuotes());
+  const [newQuoteText, setNewQuoteText] = useState("");
 
   useEffect(() => {
     setLocalDark(user?.preferences?.darkMode ?? true);
@@ -291,13 +340,10 @@ export default function ProfileTab({
 
   const handleDarkModeToggle = (checked: boolean) => {
     setLocalDark(checked);
-    // Apply dark mode immediately
     setIsDark(checked);
-    // Swap all tab backgrounds to match the new mode
     const newImageUrl = checked ? DARK_BLUE_ROSE_URL : BLUE_ROSES_URL;
     const newBgs: TabBackgrounds = {};
     for (const tab of ALL_TABS) {
-      // Keep user-customized backgrounds (non-preset images), only swap preset rose images
       const existing = tabBgs[tab];
       const isPresetRose =
         existing?.imageUrl === BLUE_ROSES_URL ||
@@ -344,6 +390,55 @@ export default function ProfileTab({
     }
   };
 
+  // Profile picture upload handler
+  const handleProfilePicUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImageToDataUrl(file, 200);
+      localStorage.setItem(PROFILE_PIC_KEY, compressed);
+      setProfilePic(compressed);
+      window.dispatchEvent(new Event("profilePictureChanged"));
+      toast.success("Profile picture updated!");
+    } catch {
+      toast.error("Failed to upload photo");
+    }
+    if (picInputRef.current) picInputRef.current.value = "";
+  };
+
+  // Quotes handlers
+  const addQuote = () => {
+    const text = newQuoteText.trim();
+    if (!text) return;
+    const newQuote: UserQuote = {
+      id: Date.now().toString(),
+      text,
+      isActive: quotes.length === 0,
+    };
+    const updated = [...quotes, newQuote];
+    setQuotes(updated);
+    saveQuotes(updated);
+    setNewQuoteText("");
+  };
+
+  const setActiveQuote = (id: string) => {
+    const updated = quotes.map((q) => ({ ...q, isActive: q.id === id }));
+    setQuotes(updated);
+    saveQuotes(updated);
+  };
+
+  const deleteQuote = (id: string) => {
+    let updated = quotes.filter((q) => q.id !== id);
+    // If deleted was active and there are remaining, make first active
+    if (quotes.find((q) => q.id === id)?.isActive && updated.length > 0) {
+      updated = updated.map((q, i) => ({ ...q, isActive: i === 0 }));
+    }
+    setQuotes(updated);
+    saveQuotes(updated);
+  };
+
   const initials = (localName || user?.name || "U")
     .split(" ")
     .map((w) => w[0])
@@ -365,7 +460,7 @@ export default function ProfileTab({
 
   return (
     <div className="flex-1 overflow-y-auto pb-6">
-      {/* User card */}
+      {/* User card with profile picture */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -373,14 +468,45 @@ export default function ProfileTab({
         className="mx-4 mt-4"
       >
         <div className="bg-gradient-to-br from-accent/20 to-card border border-accent/20 rounded-2xl p-5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center">
-            <span className="text-lg font-bold text-accent">{initials}</span>
+          {/* Avatar with upload button */}
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 rounded-full bg-accent/20 border-2 border-accent/30 overflow-hidden flex items-center justify-center">
+              {profilePic ? (
+                <img
+                  src={profilePic}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xl font-bold text-accent">
+                  {initials}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              data-ocid="profile.upload_button"
+              onClick={() => picInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md hover:bg-accent/90 transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </button>
+            <input
+              ref={picInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleProfilePicUpload}
+            />
           </div>
           <div>
             <p className="font-bold text-foreground text-lg">
               {localName || user?.name || "User"}
             </p>
             <p className="text-sm text-muted-foreground">{user?.email || ""}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Tap camera to change photo
+            </p>
           </div>
         </div>
       </motion.div>
@@ -496,6 +622,94 @@ export default function ProfileTab({
           ) : null}
           {t.saveSettings}
         </Button>
+      </motion.div>
+
+      {/* My Quotes */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.13 }}
+        className="mx-4 mt-6"
+      >
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+          My Quotes
+        </p>
+        <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+          {/* Add new quote */}
+          <div className="flex gap-2">
+            <Input
+              data-ocid="profile.input"
+              value={newQuoteText}
+              onChange={(e) => setNewQuoteText(e.target.value)}
+              placeholder="Add a motivating quote..."
+              className="h-9 text-xs flex-1"
+              onKeyDown={(e) => e.key === "Enter" && addQuote()}
+            />
+            <Button
+              data-ocid="profile.primary_button"
+              size="sm"
+              className="h-9 px-3"
+              onClick={addQuote}
+              disabled={!newQuoteText.trim()}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Quote list */}
+          {quotes.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-3">
+              No quotes yet — add one above ✨
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {quotes.map((q, i) => (
+                <div
+                  key={q.id}
+                  data-ocid={`profile.item.${i + 1}`}
+                  className={`flex items-start gap-2 p-3 rounded-xl border transition-colors ${
+                    q.isActive
+                      ? "border-accent/40 bg-accent/10"
+                      : "border-border bg-background/50"
+                  }`}
+                >
+                  <Quote className="w-3.5 h-3.5 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <p className="text-xs flex-1 italic text-foreground leading-relaxed">
+                    {q.text}
+                  </p>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      data-ocid={`profile.toggle.${i + 1}`}
+                      title={q.isActive ? "Active" : "Set as active"}
+                      onClick={() => setActiveQuote(q.id)}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                        q.isActive
+                          ? "bg-accent text-white"
+                          : "bg-muted text-muted-foreground hover:bg-accent/20"
+                      }`}
+                    >
+                      {q.isActive ? (
+                        <Check className="w-3 h-3" />
+                      ) : (
+                        <Star className="w-3 h-3" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      data-ocid={`profile.delete_button.${i + 1}`}
+                      title="Delete"
+                      onClick={() => deleteQuote(q.id)}
+                      className="w-6 h-6 rounded-full bg-muted text-muted-foreground hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* App Background */}

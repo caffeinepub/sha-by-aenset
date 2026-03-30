@@ -34,7 +34,10 @@ import GymTab from "./tabs/GymTab";
 import HomeTab from "./tabs/HomeTab";
 import NotesTab from "./tabs/NotesTab";
 import PlannerTab from "./tabs/PlannerTab";
-import ProfileTab, { getTabBackgrounds } from "./tabs/ProfileTab";
+import ProfileTab, {
+  getTabBackgrounds,
+  getProfilePicture,
+} from "./tabs/ProfileTab";
 import type { TabBackgrounds } from "./tabs/ProfileTab";
 import WardrobeTab from "./tabs/WardrobeTab";
 import { CACHE_KEYS, localCache } from "./utils/localCache";
@@ -169,6 +172,22 @@ function AppContent() {
       return next;
     });
   }, []);
+
+  const [profilePicture, setProfilePicture] = useState<string>(() =>
+    getProfilePicture(),
+  );
+
+  useEffect(() => {
+    const handler = () => setProfilePicture(getProfilePicture());
+    window.addEventListener("profilePictureChanged", handler);
+    return () => window.removeEventListener("profilePictureChanged", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => handleTabChange("profile");
+    window.addEventListener("navigateToProfile", handler);
+    return () => window.removeEventListener("navigateToProfile", handler);
+  }, [handleTabChange]);
 
   useEffect(() => {
     if (!identity) {
@@ -344,10 +363,29 @@ function AppContent() {
       dir={isRTL ? "rtl" : "ltr"}
       className="flex flex-col min-h-screen max-w-[430px] mx-auto bg-background relative overflow-hidden"
     >
-      <header className="flex-shrink-0 h-12 bg-gradient-to-r from-card to-background border-b border-border flex items-center justify-center relative z-10">
+      <header className="flex-shrink-0 h-12 bg-gradient-to-r from-card to-background border-b border-border flex items-center justify-between px-4 relative z-10">
+        <div className="w-8" />
         <h1 className="text-xs font-bold tracking-[0.2em] uppercase text-foreground">
           {tabs.find((tab) => tab.id === activeTab)?.label}
         </h1>
+        <button
+          type="button"
+          data-ocid="nav.profile.link"
+          onClick={() => handleTabChange("profile")}
+          className="w-8 h-8 rounded-full bg-accent/20 border border-accent/30 overflow-hidden flex items-center justify-center flex-shrink-0"
+        >
+          {profilePicture ? (
+            <img
+              src={profilePicture}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-xs font-bold text-accent">
+              {(user?.name || "U").charAt(0).toUpperCase()}
+            </span>
+          )}
+        </button>
       </header>
 
       <main className="flex flex-col flex-1 overflow-hidden relative">

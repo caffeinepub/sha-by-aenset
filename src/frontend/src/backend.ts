@@ -174,6 +174,8 @@ export interface backendInterface {
     getAllRoutines(): Promise<Array<Routine>>;
     setRoutineCompletion(date: string, completedRoutineIds: Array<bigint>): Promise<RoutineCompletion>;
     getAllRoutineCompletions(): Promise<Array<RoutineCompletion>>;
+    saveUserGymState(json: string): Promise<void>;
+    getUserGymState(): Promise<string | null>;
 }
 import type { UserProfileView as _UserProfileView, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -324,6 +326,15 @@ export class Backend implements backendInterface {
     }
     async getAllRoutineCompletions(): Promise<Array<RoutineCompletion>> {
         return this.call(() => this.actor.getAllRoutineCompletions());
+    }
+    async saveUserGymState(json: string): Promise<void> {
+        return this.call(() => this.actor.saveUserGymState(json));
+    }
+    async getUserGymState(): Promise<string | null> {
+        return this.call(async () => {
+            const result = await this.actor.getUserGymState();
+            return result.length === 0 ? null : result[0];
+        });
     }
 }
 function from_candid_UserRole(value: _UserRole): UserRole {

@@ -448,11 +448,11 @@ export default function FloatingChatBot({
           setOpen(true);
           scrollToBottom();
         }}
-        className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center justify-center"
+        className="fixed bottom-20 right-4 z-[250] w-12 h-12 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center justify-center"
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.93 }}
         aria-label="Open Sha Assistant"
-        style={{ display: open ? "none" : "flex" }}
+        style={{ zIndex: 250, display: open ? "none" : "flex" }}
       >
         <MessageCircle className="w-5 h-5" />
       </motion.button>
@@ -466,8 +466,8 @@ export default function FloatingChatBot({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col bg-background border-t border-x border-border rounded-t-2xl shadow-2xl"
-            style={{ height: "75dvh" }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[260] flex flex-col bg-background border-t border-x border-border rounded-t-2xl shadow-2xl"
+            style={{ height: "75dvh", zIndex: 260 }}
           >
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2">

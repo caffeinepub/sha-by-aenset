@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Quote,
+  Sparkles,
   Square,
   Timer,
 } from "lucide-react";
@@ -18,6 +20,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
 import { useActor } from "../hooks/useActor";
 import { useListTasksByDate, useUpdateTask } from "../hooks/useQueries";
+import { getQuotes } from "./ProfileTab";
+import type { UserQuote } from "./ProfileTab";
 
 interface NotesActor {
   getAllNotes(): Promise<Note[]>;
@@ -561,6 +565,64 @@ const LiveClock = memo(function LiveClock() {
 });
 
 // ─── HomeTab ──────────────────────────────────────────────────────────────────
+// ─── QuoteCard component ─────────────────────────────────────────────────────
+function QuoteCard({
+  onNavigateToProfile,
+}: { onNavigateToProfile: () => void }) {
+  const [activeQuote, setActiveQuote] = useState<UserQuote | null>(() => {
+    const qs = getQuotes();
+    return qs.find((q) => q.isActive) ?? null;
+  });
+
+  useEffect(() => {
+    const refresh = () => {
+      const qs = getQuotes();
+      setActiveQuote(qs.find((q) => q.isActive) ?? null);
+    };
+    window.addEventListener("quotesChanged", refresh);
+    return () => window.removeEventListener("quotesChanged", refresh);
+  }, []);
+
+  if (!activeQuote) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22 }}
+        className="mx-5 mt-4"
+      >
+        <button
+          type="button"
+          data-ocid="home.primary_button"
+          onClick={onNavigateToProfile}
+          className="w-full bg-accent/10 border border-accent/20 rounded-2xl p-4 flex items-center gap-3 hover:bg-accent/15 transition-colors"
+        >
+          <Sparkles className="w-5 h-5 text-accent flex-shrink-0" />
+          <span className="text-sm text-accent font-medium">
+            Tap to add your quote ✨
+          </span>
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.22 }}
+      className="mx-5 mt-4"
+    >
+      <div className="bg-gradient-to-br from-accent/15 to-card border border-accent/25 rounded-2xl p-4 flex items-start gap-3">
+        <Quote className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+        <p className="text-sm italic text-foreground leading-relaxed">
+          {activeQuote.text}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function HomeTab() {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -737,6 +799,13 @@ export default function HomeTab() {
           </div>
         </div>
       </motion.div>
+
+      {/* Motivating Quote */}
+      <QuoteCard
+        onNavigateToProfile={() =>
+          window.dispatchEvent(new Event("navigateToProfile"))
+        }
+      />
 
       {/* Weather Widget */}
       <motion.div

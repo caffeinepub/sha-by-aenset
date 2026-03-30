@@ -4,8 +4,10 @@ import App from "./App";
 import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
 import "./index.css";
 
+// Fix BigInt JSON serialization to use the __bigint__ prefix that localCache reviver expects.
+// Without this, BigInt values stored in cache come back as plain strings, breaking ID comparisons.
 BigInt.prototype.toJSON = function () {
-  return this.toString();
+  return `__bigint__${this.toString()}`;
 };
 
 declare global {

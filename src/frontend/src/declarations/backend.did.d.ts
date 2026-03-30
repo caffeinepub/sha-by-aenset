@@ -144,6 +144,8 @@ export interface _SERVICE {
   'getAllRoutines' : ActorMethod<[], Array<Routine>>,
   'setRoutineCompletion' : ActorMethod<[string, Array<bigint>], RoutineCompletion>,
   'getAllRoutineCompletions' : ActorMethod<[], Array<RoutineCompletion>>,
+  'saveUserGymState' : ActorMethod<[string], undefined>,
+  'getUserGymState' : ActorMethod<[], [string] | []>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
