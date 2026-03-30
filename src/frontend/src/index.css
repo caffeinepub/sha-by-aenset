@@ -117,4 +117,82 @@
     box-shadow: 0 4px 24px oklch(0.57 0.18 268 / 0.12), 0 1px 4px
       oklch(0 0 0 / 0.3);
   }
+
+  /* =====================================================
+     Adaptive text contrast for tab backgrounds
+     When a background image is set, data-bg-mode is
+     applied to automatically keep all text legible.
+     ===================================================== */
+
+  /* --- DARK background mode (light text) --- */
+  [data-bg-mode="dark"] {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  [data-bg-mode="dark"] h1,
+  [data-bg-mode="dark"] h2,
+  [data-bg-mode="dark"] h3,
+  [data-bg-mode="dark"] h4,
+  [data-bg-mode="dark"] p,
+  [data-bg-mode="dark"] span:not(.no-contrast-override),
+  [data-bg-mode="dark"] label,
+  [data-bg-mode="dark"] .text-foreground,
+  [data-bg-mode="dark"] .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+  [data-bg-mode="dark"] button {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  [data-bg-mode="dark"] svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  }
+  [data-bg-mode="dark"] input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  [data-bg-mode="dark"] .text-accent {
+    color: oklch(0.82 0.12 268) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  }
+  [data-bg-mode="dark"] .bg-card,
+  [data-bg-mode="dark"] .bg-background {
+    background-color: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(6px);
+  }
+  [data-bg-mode="dark"] .border-border {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* --- LIGHT background mode (dark text) --- */
+  [data-bg-mode="light"] h1,
+  [data-bg-mode="light"] h2,
+  [data-bg-mode="light"] h3,
+  [data-bg-mode="light"] h4,
+  [data-bg-mode="light"] p,
+  [data-bg-mode="light"] span:not(.no-contrast-override),
+  [data-bg-mode="light"] label,
+  [data-bg-mode="light"] .text-foreground,
+  [data-bg-mode="light"] .text-muted-foreground {
+    color: rgba(20, 20, 40, 0.9) !important;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+  }
+  [data-bg-mode="light"] button {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+  }
+  [data-bg-mode="light"] svg {
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.5));
+  }
+  [data-bg-mode="light"] input::placeholder {
+    color: rgba(20, 20, 40, 0.4);
+  }
+  [data-bg-mode="light"] .text-accent {
+    color: oklch(0.42 0.18 268) !important;
+  }
+  [data-bg-mode="light"] .bg-card,
+  [data-bg-mode="light"] .bg-background {
+    background-color: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(6px);
+  }
+  [data-bg-mode="light"] .border-border {
+    border-color: rgba(0, 0, 0, 0.15) !important;
+  }
 }

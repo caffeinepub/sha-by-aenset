@@ -48,18 +48,28 @@ const TAB_LABELS: { id: TabKey; label: string; emoji: string }[] = [
   { id: "profile", label: "Profile", emoji: "👤" },
 ];
 
-const FLORAL_PRESET_URL =
-  "/assets/uploads/logo-019d3aa0-c53e-710e-b14f-d983ae041b7c-1.jpg";
+const BLUE_ROSES_URL =
+  "/assets/uploads/whatsapp_image_2026-03-30_at_12.17.23-019d3d80-09c8-718a-b31d-61187a8b423b-1.jpeg";
+
+const DARK_BLUE_ROSE_URL = "/assets/uploads/dark-blue-rose.jpeg";
+
+const ALL_TABS: TabKey[] = [
+  "home",
+  "notes",
+  "planner",
+  "finance",
+  "wardrobe",
+  "profile",
+];
 
 const PRESET_BACKGROUNDS = [
   {
-    label: "Floral",
-    value: FLORAL_PRESET_URL,
+    label: "Blue Roses",
+    value: BLUE_ROSES_URL,
   },
   {
-    label: "Blue Roses",
-    value:
-      "/assets/uploads/whatsapp_image_2026-03-30_at_12.17.23-019d3d80-09c8-718a-b31d-61187a8b423b-1.jpeg",
+    label: "Dark Blue Rose",
+    value: DARK_BLUE_ROSE_URL,
   },
   {
     label: "Soft Lavender",
@@ -121,42 +131,28 @@ export type TabBackgrounds = Partial<Record<TabKey, TabBackground>>;
 const BG_STORAGE_KEY = "sha_tab_backgrounds";
 
 export function getTabBackgrounds(): TabBackgrounds {
+  const isDarkMode = localStorage.getItem("sha_dark_mode") !== "false";
+  const defaultImageUrl = isDarkMode ? DARK_BLUE_ROSE_URL : BLUE_ROSES_URL;
   try {
     const stored = JSON.parse(
       localStorage.getItem(BG_STORAGE_KEY) || "{}",
     ) as TabBackgrounds;
-    const ALL_TABS: TabKey[] = [
-      "home",
-      "notes",
-      "planner",
-      "finance",
-      "wardrobe",
-      "profile",
-    ];
     for (const tab of ALL_TABS) {
       if (!stored[tab]) {
-        stored[tab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+        stored[tab] = { imageUrl: defaultImageUrl, opacity: 0.4 };
       }
     }
     return stored;
   } catch {
-    const ALL_TABS: TabKey[] = [
-      "home",
-      "notes",
-      "planner",
-      "finance",
-      "wardrobe",
-      "profile",
-    ];
     const defaults: TabBackgrounds = {};
     for (const tab of ALL_TABS) {
-      defaults[tab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+      defaults[tab] = { imageUrl: defaultImageUrl, opacity: 0.4 };
     }
     return defaults;
   }
 }
 
-function saveTabBackgrounds(bgs: TabBackgrounds) {
+export function saveTabBackgrounds(bgs: TabBackgrounds) {
   localStorage.setItem(BG_STORAGE_KEY, JSON.stringify(bgs));
 }
 
@@ -282,11 +278,40 @@ export default function ProfileTab({
   };
 
   const removeBg = () => {
+    const isDarkMode = localStorage.getItem("sha_dark_mode") !== "false";
     const next = { ...tabBgs };
-    // Reset to floral default for all tabs
-    next[bgTab] = { imageUrl: FLORAL_PRESET_URL, opacity: 0.4 };
+    next[bgTab] = {
+      imageUrl: isDarkMode ? DARK_BLUE_ROSE_URL : BLUE_ROSES_URL,
+      opacity: 0.4,
+    };
     setTabBgs(next);
     saveTabBackgrounds(next);
+    onBackgroundChange?.();
+  };
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setLocalDark(checked);
+    // Apply dark mode immediately
+    setIsDark(checked);
+    // Swap all tab backgrounds to match the new mode
+    const newImageUrl = checked ? DARK_BLUE_ROSE_URL : BLUE_ROSES_URL;
+    const newBgs: TabBackgrounds = {};
+    for (const tab of ALL_TABS) {
+      // Keep user-customized backgrounds (non-preset images), only swap preset rose images
+      const existing = tabBgs[tab];
+      const isPresetRose =
+        existing?.imageUrl === BLUE_ROSES_URL ||
+        existing?.imageUrl === DARK_BLUE_ROSE_URL ||
+        !existing;
+      newBgs[tab] = {
+        imageUrl: isPresetRose
+          ? newImageUrl
+          : (existing?.imageUrl ?? newImageUrl),
+        opacity: existing?.opacity ?? 0.4,
+      };
+    }
+    setTabBgs(newBgs);
+    saveTabBackgrounds(newBgs);
     onBackgroundChange?.();
   };
 
@@ -388,7 +413,7 @@ export default function ProfileTab({
             <Switch
               data-ocid="profile.switch"
               checked={localDark}
-              onCheckedChange={setLocalDark}
+              onCheckedChange={handleDarkModeToggle}
             />
           </div>
 
@@ -607,7 +632,7 @@ export default function ProfileTab({
               onClick={removeBg}
             >
               <Trash2 className="w-4 h-4" />
-              Reset to default floral
+              Reset to default
             </Button>
           )}
         </div>

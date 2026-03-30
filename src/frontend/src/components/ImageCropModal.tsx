@@ -7,7 +7,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Crop, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -76,8 +82,8 @@ export default function ImageCropModal({
     img.src = imageSrc;
   }, [imageSrc]);
 
-  // Measure container size
-  useEffect(() => {
+  // Measure container size (runs once on mount)
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -93,7 +99,7 @@ export default function ImageCropModal({
       w: cw,
       h: ch,
     });
-  });
+  }, []);
 
   // Draw to canvas
   useEffect(() => {

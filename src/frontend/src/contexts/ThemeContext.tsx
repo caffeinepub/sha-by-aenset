@@ -17,7 +17,14 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDarkState] = useState(
+    () => localStorage.getItem("sha_dark_mode") !== "false",
+  );
+
+  const setIsDark = (v: boolean) => {
+    localStorage.setItem("sha_dark_mode", String(v));
+    setIsDarkState(v);
+  };
 
   useEffect(() => {
     const root = document.documentElement;

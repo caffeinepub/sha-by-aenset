@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import type { ClothingItem, Outfit, PlannerDayOutfit } from "../backend.d";
 import { useI18n } from "../contexts/I18nContext";
@@ -257,7 +258,7 @@ export default function PlannerTab() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 12 }}
             transition={{ duration: 0.18 }}
-            className="flex-1 overflow-y-auto pb-6"
+            className="flex-1 overflow-y-auto pb-28"
           >
             {/* Calendar */}
             <div className="mx-4">
@@ -632,80 +633,85 @@ export default function PlannerTab() {
             </div>
 
             {/* Outfit Picker Sheet */}
-            <AnimatePresence>
-              {outfitPickerOpen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-40 bg-black/60"
-                  onClick={() => setOutfitPickerOpen(false)}
-                />
-              )}
-              {outfitPickerOpen && (
-                <motion.div
-                  data-ocid="planner.modal"
-                  initial={{ y: "100%" }}
-                  animate={{ y: 0 }}
-                  exit={{ y: "100%" }}
-                  transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                  className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-sm text-foreground">
-                      {t.pickOutfit}
-                    </h3>
-                    <button
-                      type="button"
-                      data-ocid="planner.close_button"
-                      onClick={() => setOutfitPickerOpen(false)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+            {createPortal(
+              <AnimatePresence>
+                {outfitPickerOpen && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/60"
+                    style={{ zIndex: 200 }}
+                    onClick={() => setOutfitPickerOpen(false)}
+                  />
+                )}
+                {outfitPickerOpen && (
+                  <motion.div
+                    data-ocid="planner.modal"
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8"
+                    style={{ zIndex: 201 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-sm text-foreground">
+                        {t.pickOutfit}
+                      </h3>
+                      <button
+                        type="button"
+                        data-ocid="planner.close_button"
+                        onClick={() => setOutfitPickerOpen(false)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
 
-                  {(allOutfits as Outfit[]).length === 0 ? (
-                    <div className="text-center py-8">
-                      <Shirt className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        {t.noOutfits}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                      {(allOutfits as Outfit[]).map((outfit, idx) => (
-                        <button
-                          type="button"
-                          key={outfit.id.toString()}
-                          data-ocid={`planner.item.${idx + 1}`}
-                          onClick={() => handlePickOutfit(outfit)}
-                          className="w-full bg-card border border-border rounded-xl p-3 flex items-center gap-3 hover:border-accent transition-colors"
-                        >
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                            <OutfitCollage
-                              outfitId={outfit.id.toString()}
-                              photoUrl={outfit.photoUrl}
-                              clothingItems={clothingItems as ClothingItem[]}
-                              resolvePhoto={(url) => url}
-                              className="rounded-lg"
-                            />
-                          </div>
-                          <div className="flex-1 text-left min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">
-                              {outfit.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {outfit.occasion}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    {(allOutfits as Outfit[]).length === 0 ? (
+                      <div className="text-center py-8">
+                        <Shirt className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          {t.noOutfits}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                        {(allOutfits as Outfit[]).map((outfit, idx) => (
+                          <button
+                            type="button"
+                            key={outfit.id.toString()}
+                            data-ocid={`planner.item.${idx + 1}`}
+                            onClick={() => handlePickOutfit(outfit)}
+                            className="w-full bg-card border border-border rounded-xl p-3 flex items-center gap-3 hover:border-accent transition-colors"
+                          >
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                              <OutfitCollage
+                                outfitId={outfit.id.toString()}
+                                photoUrl={outfit.photoUrl}
+                                clothingItems={clothingItems as ClothingItem[]}
+                                resolvePhoto={(url) => url}
+                                className="rounded-lg"
+                              />
+                            </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {outfit.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {outfit.occasion}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              document.body,
+            )}
           </motion.div>
         )}
       </AnimatePresence>

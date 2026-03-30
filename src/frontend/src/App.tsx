@@ -13,8 +13,9 @@ import FloatingChatBot from "./components/FloatingChatBot";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { I18nProvider, RTL_LANGUAGES, useI18n } from "./contexts/I18nContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useActor } from "./hooks/useActor";
+import { useBackgroundContrast } from "./hooks/useBackgroundContrast";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import AuthScreen from "./screens/AuthScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -56,6 +57,8 @@ function TabWrapper({
   bg: TabBackgrounds[Tab] | undefined;
   children: React.ReactNode;
 }) {
+  const bgMode = useBackgroundContrast(bg?.imageUrl, bg?.opacity ?? 0);
+
   return (
     <div
       className="flex-col flex-1 overflow-hidden relative"
@@ -73,6 +76,7 @@ function TabWrapper({
       <div
         className="relative flex flex-col flex-1 overflow-hidden"
         style={{ zIndex: 1 }}
+        data-bg-mode={bg ? bgMode : undefined}
       >
         {children}
       </div>
@@ -89,6 +93,7 @@ function AppContent() {
   } = useInternetIdentity();
   const { user, setUser, isLoading, setIsLoading } = useAuth();
   const { t, lang } = useI18n();
+  const { setIsDark } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [tabBackgrounds, setTabBackgrounds] = useState<TabBackgrounds>(() =>
@@ -125,6 +130,10 @@ function AppContent() {
         clearTimeout(timeout);
         if (profile) {
           setUser(profile);
+          // Sync dark mode preference from backend profile
+          if (profile.preferences?.darkMode !== undefined) {
+            setIsDark(profile.preferences.darkMode);
+          }
         } else {
           setShowOnboarding(true);
         }
@@ -137,7 +146,7 @@ function AppContent() {
       .finally(() => setIsLoading(false));
 
     return () => clearTimeout(timeout);
-  }, [identity, actor, isFetching, setUser, setIsLoading]);
+  }, [identity, actor, isFetching, setUser, setIsLoading, setIsDark]);
 
   useEffect(() => {
     if (!identity) {
