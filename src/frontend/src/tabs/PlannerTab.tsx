@@ -704,14 +704,14 @@ export default function PlannerTab() {
                 {outfitPickerOpen && (
                   <motion.div
                     data-ocid="planner.modal"
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl px-5 pt-4 pb-8 z-50"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                    className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
                     style={{ zIndex: 201 }}
                   >
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 px-5 pt-4">
                       <h3 className="font-bold text-sm text-foreground">
                         {t.pickOutfit}
                       </h3>
@@ -733,7 +733,7 @@ export default function PlannerTab() {
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                      <div className="space-y-2 max-h-[70vh] overflow-y-auto px-5 pb-6">
                         {(allOutfits as Outfit[]).map((outfit, idx) => (
                           <button
                             type="button"

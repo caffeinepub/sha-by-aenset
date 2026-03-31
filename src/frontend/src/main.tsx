@@ -5,7 +5,7 @@ import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
 import "./index.css";
 
 BigInt.prototype.toJSON = function () {
-  return `__bigint__${this.toString()}`;
+  return this.toString();
 };
 
 declare global {
@@ -14,15 +14,7 @@ declare global {
   }
 }
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>

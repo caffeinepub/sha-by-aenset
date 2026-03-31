@@ -29,6 +29,13 @@ export function formatTime(ms: number): string {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+export function formatStopwatch(ms: number): string {
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+  const cs = Math.floor((ms % 1000) / 10);
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+}
+
 export function TimerPanel({ onClose, notes, onSaveToNote }: TimerPanelProps) {
   const [mode, setMode] = useState<"stopwatch" | "timer">("stopwatch");
   const [running, setRunning] = useState(false);
@@ -53,7 +60,7 @@ export function TimerPanel({ onClose, notes, onSaveToNote }: TimerPanelProps) {
     baseElapsedRef.current = elapsed;
     intervalRef.current = setInterval(() => {
       setElapsed(baseElapsedRef.current + (Date.now() - startTimeRef.current));
-    }, 100);
+    }, 10);
     setRunning(true);
   };
 
@@ -145,7 +152,7 @@ export function TimerPanel({ onClose, notes, onSaveToNote }: TimerPanelProps) {
       {mode === "stopwatch" ? (
         <div className="text-center">
           <div className="text-4xl font-mono font-bold text-foreground my-3">
-            {formatTime(elapsed)}
+            {formatStopwatch(elapsed)}
           </div>
           <div className="flex justify-center gap-2 mb-3">
             <Button

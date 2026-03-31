@@ -1,0 +1,24 @@
+{
+  "name": "sha",
+  "short_name": "sha",
+  "description": "sha by Aenset - Personal Assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/sha-019d3fcb-a3c0-7722-81f7-633f6ab72c24.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/sha-019d3fcb-a3c0-7722-81f7-633f6ab72c24.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

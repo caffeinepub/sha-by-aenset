@@ -11,7 +11,6 @@ import {
 import { motion } from "motion/react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { UserProfileView } from "./backend.d";
-import FloatingChatBot from "./components/FloatingChatBot";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { I18nProvider, RTL_LANGUAGES, useI18n } from "./contexts/I18nContext";
@@ -19,13 +18,7 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useActor } from "./hooks/useActor";
 import { useBackgroundContrast } from "./hooks/useBackgroundContrast";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import {
-  useGetAllOutfits,
-  useGetAllPlannerDayOutfits,
-  useGetAllRoutineCompletions,
-  useGetAllRoutines,
-  useGetAllTasks,
-} from "./hooks/useQueries";
+import { useGetAllTasks } from "./hooks/useQueries";
 import { useTaskNotifications } from "./hooks/useTaskNotifications";
 import AuthScreen from "./screens/AuthScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -50,8 +43,6 @@ type Tab =
   | "profile"
   | "wardrobe"
   | "gym";
-
-const MemoFloatingChatBot = memo(FloatingChatBot);
 
 function buildBgStyle(
   bg: TabBackgrounds[keyof TabBackgrounds] | undefined,
@@ -137,10 +128,6 @@ function AppContent() {
   const { user, setUser, isLoading, setIsLoading } = useAuth();
   const { t, lang } = useI18n();
   const { data: allTasksForNotif } = useGetAllTasks();
-  const { data: allRoutines = [] } = useGetAllRoutines();
-  const { data: allRoutineCompletions = [] } = useGetAllRoutineCompletions();
-  const { data: allPlannerOutfits = [] } = useGetAllPlannerDayOutfits();
-  const { data: allOutfits = [] } = useGetAllOutfits();
   useTaskNotifications(allTasksForNotif);
   const { setIsDark } = useTheme();
   const setIsDarkRef = useRef(setIsDark);
@@ -252,12 +239,18 @@ function AppContent() {
             setIsDarkRef.current(profile.preferences.darkMode);
           }
         } else {
+          if (localStorage.getItem("sha_onboarding_done") === "1") {
+            setIsLoading(false);
+            return;
+          }
           setShowOnboarding(true);
         }
       })
       .catch(() => {
         clearTimeout(timeout);
-        setShowOnboarding(true);
+        if (localStorage.getItem("sha_onboarding_done") !== "1") {
+          setShowOnboarding(true);
+        }
       })
       .finally(() => setIsLoading(false));
 
@@ -281,7 +274,8 @@ function AppContent() {
       !isFetching &&
       identity &&
       !user &&
-      !showOnboarding
+      !showOnboarding &&
+      localStorage.getItem("sha_onboarding_done") !== "1"
     ) {
       setShowOnboarding(true);
     }
@@ -310,6 +304,7 @@ function AppContent() {
     setUser(defaultProfile);
     localCache.set(CACHE_KEYS.profile, defaultProfile);
     setShowOnboarding(false);
+    localStorage.setItem("sha_onboarding_done", "1");
 
     // Save to backend in background (non-blocking)
     if (actor) {
@@ -324,7 +319,8 @@ function AppContent() {
 
   if (!identity) return <AuthScreen />;
 
-  if (isLoading) {
+  const hasCachedProfile = !!localCache.get(CACHE_KEYS.profile);
+  if (isLoading && !hasCachedProfile) {
     return <SplashScreen />;
   }
 
@@ -520,34 +516,6 @@ function AppContent() {
           })}
         </div>
       </nav>
-
-      <MemoFloatingChatBot
-        userName={user.name}
-        routines={(allRoutines as any[]).map((r: any) => {
-          const todayStr2 = new Date().toISOString().split("T")[0];
-          const todayCompletion = (allRoutineCompletions as any[]).find(
-            (c: any) => c.date === todayStr2,
-          );
-          const completedIds: bigint[] =
-            todayCompletion?.completedRoutineIds ?? [];
-          return {
-            id: r.id,
-            name: r.name,
-            timeOfDay: r.timeOfDay,
-            completedToday: completedIds.some((cid) => cid === r.id),
-          };
-        })}
-        plannerOutfits={(allPlannerOutfits as any[]).map((po: any) => ({
-          date: po.date,
-          outfitId: po.outfitId,
-        }))}
-        outfits={(allOutfits as any[]).map((o: any) => ({
-          id: o.id,
-          name: o.name,
-          occasion: o.occasion,
-          photoUrl: o.photoUrl,
-        }))}
-      />
     </div>
   );
 }

@@ -32,10 +32,11 @@ export function useActor() {
     },
     // Only refetch when identity changes
     staleTime: Number.POSITIVE_INFINITY,
+    // This will cause the actor to be recreated when the identity changes
     enabled: true,
   });
 
-  // When the actor changes, lazily invalidate dependent queries (no forced refetch)
+  // When the actor changes, invalidate dependent queries
   useEffect(() => {
     if (actorQuery.data) {
       queryClient.invalidateQueries({
@@ -43,31 +44,13 @@ export function useActor() {
           return !query.queryKey.includes(ACTOR_QUERY_KEY);
         },
       });
+      queryClient.refetchQueries({
+        predicate: (query) => {
+          return !query.queryKey.includes(ACTOR_QUERY_KEY);
+        },
+      });
     }
   }, [actorQuery.data, queryClient]);
-
-  // Periodically re-register and re-register on window focus to handle post-deployment resets
-  useEffect(() => {
-    const actor = actorQuery.data;
-    if (!actor || !identity) return;
-
-    const reregister = async () => {
-      try {
-        const adminToken = getSecretParameter("caffeineAdminToken") || "";
-        await actor._initializeAccessControlWithSecret(adminToken);
-      } catch {
-        // Silently ignore re-registration errors
-      }
-    };
-
-    const interval = setInterval(reregister, 5 * 60 * 1000);
-    window.addEventListener("focus", reregister);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", reregister);
-    };
-  }, [actorQuery.data, identity]);
 
   return {
     actor: actorQuery.data || null,

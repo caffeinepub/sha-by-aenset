@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Pencil,
   Quote,
   Sparkles,
   Square,
@@ -633,6 +634,8 @@ export default function HomeTab() {
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [showTimer, setShowTimer] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<bigint | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>("");
 
   const notesActor = actor as unknown as NotesActor | null;
 
@@ -756,47 +759,118 @@ export default function HomeTab() {
             </p>
             <DonutChart completed={completed} total={total} />
           </div>
-          <div className="bg-card border border-border rounded-2xl p-4">
-            <p className="text-xs font-semibold text-muted-foreground mb-3">
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center gap-1">
+            <p className="text-xs font-semibold text-muted-foreground">
               {t.todaysChecklist}
             </p>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-5/6" />
-              </div>
-            ) : tasks && tasks.length > 0 ? (
-              <div className="space-y-2">
-                {tasks.slice(0, 3).map((task, i) => (
+            <p className="text-3xl font-black text-foreground">
+              {completed}/{total}
+            </p>
+            <p className="text-xs text-muted-foreground">tasks done</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Today's Checklist - full width scrollable */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="mx-5 mt-4"
+      >
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">
+          {t.todaysChecklist}
+        </h3>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-6 w-5/6" />
+            </div>
+          ) : tasks && tasks.length > 0 ? (
+            <div
+              className="max-h-48 overflow-y-auto space-y-2"
+              data-ocid="home.list"
+            >
+              {tasks.map((task, i) => (
+                <div
+                  key={task.id.toString()}
+                  data-ocid={`home.item.${i + 1}`}
+                  className="flex items-center gap-2 group"
+                >
                   <button
                     type="button"
-                    key={task.id.toString()}
                     data-ocid={`home.checkbox.${i + 1}`}
                     onClick={() => toggleTask(task)}
-                    className="flex items-center gap-2 w-full text-left group"
+                    className="flex-shrink-0"
                   >
                     {task.completed ? (
-                      <CheckSquare className="w-4 h-4 text-accent flex-shrink-0" />
+                      <CheckSquare className="w-4 h-4 text-accent" />
                     ) : (
-                      <Square className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Square className="w-4 h-4 text-muted-foreground" />
                     )}
+                  </button>
+                  {editingTaskId === task.id ? (
+                    <input
+                      className="flex-1 text-xs bg-muted rounded px-2 py-1 text-foreground border border-accent outline-none"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => {
+                        if (editingTitle.trim()) {
+                          updateTask.mutate({
+                            taskId: task.id,
+                            title: editingTitle.trim(),
+                            description: task.description,
+                            completed: task.completed,
+                          });
+                        }
+                        setEditingTaskId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          if (editingTitle.trim()) {
+                            updateTask.mutate({
+                              taskId: task.id,
+                              title: editingTitle.trim(),
+                              description: task.description,
+                              completed: task.completed,
+                            });
+                          }
+                          setEditingTaskId(null);
+                        }
+                        if (e.key === "Escape") setEditingTaskId(null);
+                      }}
+                    />
+                  ) : (
                     <span
-                      className={`text-xs leading-tight ${
-                        task.completed
-                          ? "line-through text-muted-foreground"
-                          : "text-foreground"
-                      }`}
+                      className={`flex-1 text-xs leading-tight ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
                     >
                       {task.title}
                     </span>
+                  )}
+                  <button
+                    type="button"
+                    data-ocid={`home.edit_button.${i + 1}`}
+                    onClick={() => {
+                      setEditingTaskId(task.id);
+                      setEditingTitle(task.title);
+                    }}
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-3 h-3 text-muted-foreground hover:text-accent" />
                   </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">{t.noTasksToday}</p>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p
+              className="text-xs text-muted-foreground text-center py-2"
+              data-ocid="home.empty_state"
+            >
+              {t.noTasksToday}
+            </p>
+          )}
         </div>
       </motion.div>
 
