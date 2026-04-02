@@ -709,7 +709,7 @@ export default function PlannerTab() {
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
-                    style={{ zIndex: 201 }}
+                    style={{ zIndex: 201, transformOrigin: "center" }}
                   >
                     <div className="flex items-center justify-between mb-4 px-5 pt-4">
                       <h3 className="font-bold text-sm text-foreground">

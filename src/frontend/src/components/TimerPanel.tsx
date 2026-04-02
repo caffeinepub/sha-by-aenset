@@ -32,8 +32,8 @@ export function formatTime(ms: number): string {
 export function formatStopwatch(ms: number): string {
   const mins = Math.floor(ms / 60000);
   const secs = Math.floor((ms % 60000) / 1000);
-  const cs = Math.floor((ms % 1000) / 10);
-  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+  const millis = ms % 1000;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
 }
 
 export function TimerPanel({ onClose, notes, onSaveToNote }: TimerPanelProps) {

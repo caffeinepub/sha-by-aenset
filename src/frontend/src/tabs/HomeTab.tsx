@@ -449,59 +449,6 @@ const WeatherWidget = memo(function WeatherWidget() {
   );
 });
 
-// ─── DonutChart (memoized) ────────────────────────────────────────────────────
-const DonutChart = memo(function DonutChart({
-  completed,
-  total,
-}: { completed: number; total: number }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  const pct = total === 0 ? 0 : completed / total;
-  const dash = pct * circ;
-  return (
-    <svg
-      width="88"
-      height="88"
-      viewBox="0 0 88 88"
-      role="img"
-      aria-label={`${completed} of ${total} tasks completed`}
-      className="text-foreground"
-    >
-      <title>{`${completed}/${total} tasks`}</title>
-      <circle
-        cx="44"
-        cy="44"
-        r={r}
-        fill="none"
-        stroke="oklch(var(--border))"
-        strokeWidth="8"
-      />
-      <circle
-        cx="44"
-        cy="44"
-        r={r}
-        fill="none"
-        stroke="oklch(var(--accent))"
-        strokeWidth="8"
-        strokeDasharray={`${dash} ${circ}`}
-        strokeLinecap="round"
-        transform="rotate(-90 44 44)"
-        style={{ transition: "stroke-dasharray 0.6s ease" }}
-      />
-      <text
-        x="44"
-        y="49"
-        textAnchor="middle"
-        fill="currentColor"
-        fontSize="13"
-        fontWeight="700"
-      >
-        {completed}/{total}
-      </text>
-    </svg>
-  );
-});
-
 // ─── useLiveClock ─────────────────────────────────────────────────────────────
 function useLiveClock() {
   const [now, setNow] = useState(() => new Date());
@@ -752,22 +699,14 @@ export default function HomeTab() {
         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">
           {t.yourDayAtAGlance}
         </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-2">
-            <p className="text-xs font-semibold text-muted-foreground">
-              {t.tasksProgress}
-            </p>
-            <DonutChart completed={completed} total={total} />
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center gap-1">
-            <p className="text-xs font-semibold text-muted-foreground">
-              {t.todaysChecklist}
-            </p>
-            <p className="text-3xl font-black text-foreground">
-              {completed}/{total}
-            </p>
-            <p className="text-xs text-muted-foreground">tasks done</p>
-          </div>
+        <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center gap-1">
+          <p className="text-xs font-semibold text-muted-foreground">
+            {t.todaysChecklist}
+          </p>
+          <p className="text-3xl font-black text-foreground">
+            {completed}/{total}
+          </p>
+          <p className="text-xs text-muted-foreground">tasks done</p>
         </div>
       </motion.div>
 

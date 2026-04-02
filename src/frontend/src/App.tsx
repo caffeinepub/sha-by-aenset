@@ -177,6 +177,12 @@ function AppContent() {
   }, [handleTabChange]);
 
   useEffect(() => {
+    // Compute principal-scoped onboarding key so session persists across app restarts
+    const principalId = identity?.getPrincipal().toString();
+    const onboardingKey = principalId
+      ? `sha_onboarding_done_${principalId}`
+      : "sha_onboarding_done";
+
     if (!identity) {
       setIsLoading(false);
       return;
@@ -207,6 +213,7 @@ function AppContent() {
       if (cached.preferences?.darkMode !== undefined) {
         setIsDarkRef.current(cached.preferences.darkMode);
       }
+      // Sync with backend in background (non-blocking)
       actor
         .getCallerUserProfile()
         .then((profile) => {
@@ -225,7 +232,10 @@ function AppContent() {
     setIsLoading(true);
     const timeout = setTimeout(() => {
       setIsLoading(false);
-      setShowOnboarding(true);
+      // Only show onboarding if this principal hasn't done it yet
+      if (localStorage.getItem(onboardingKey) !== "1") {
+        setShowOnboarding(true);
+      }
     }, 6000);
 
     actor
@@ -233,22 +243,25 @@ function AppContent() {
       .then((profile) => {
         clearTimeout(timeout);
         if (profile) {
+          // Returning user — mark onboarding done for this principal and go straight in
+          localStorage.setItem(onboardingKey, "1");
           setUser(profile);
           localCache.set(CACHE_KEYS.profile, profile);
           if (profile.preferences?.darkMode !== undefined) {
             setIsDarkRef.current(profile.preferences.darkMode);
           }
         } else {
-          if (localStorage.getItem("sha_onboarding_done") === "1") {
+          // New user — check if they've already done onboarding on this device for this principal
+          if (localStorage.getItem(onboardingKey) !== "1") {
+            setShowOnboarding(true);
+          } else {
             setIsLoading(false);
-            return;
           }
-          setShowOnboarding(true);
         }
       })
       .catch(() => {
         clearTimeout(timeout);
-        if (localStorage.getItem("sha_onboarding_done") !== "1") {
+        if (localStorage.getItem(onboardingKey) !== "1") {
           setShowOnboarding(true);
         }
       })
@@ -268,6 +281,9 @@ function AppContent() {
   // Safety net: if not loading and we have an identity but no user and not showing
   // onboarding, force onboarding so the app never gets stuck on a blank screen.
   useEffect(() => {
+    const principalKey = identity
+      ? `sha_onboarding_done_${identity.getPrincipal().toString()}`
+      : "sha_onboarding_done";
     if (
       !isLoading &&
       !isInitializing &&
@@ -275,13 +291,18 @@ function AppContent() {
       identity &&
       !user &&
       !showOnboarding &&
-      localStorage.getItem("sha_onboarding_done") !== "1"
+      localStorage.getItem(principalKey) !== "1"
     ) {
       setShowOnboarding(true);
     }
   }, [isLoading, isInitializing, isFetching, identity, user, showOnboarding]);
 
   const onLogout = () => {
+    // Remove principal-scoped onboarding key so the login screen appears after logout
+    if (identity) {
+      const pid = identity.getPrincipal().toString();
+      localStorage.removeItem(`sha_onboarding_done_${pid}`);
+    }
     clearIdentity();
     setUser(null);
     setShowOnboarding(false);
@@ -304,7 +325,12 @@ function AppContent() {
     setUser(defaultProfile);
     localCache.set(CACHE_KEYS.profile, defaultProfile);
     setShowOnboarding(false);
-    localStorage.setItem("sha_onboarding_done", "1");
+    // Store onboarding completion scoped to this ICP principal
+    const principalId = identity?.getPrincipal().toString();
+    const key = principalId
+      ? `sha_onboarding_done_${principalId}`
+      : "sha_onboarding_done";
+    localStorage.setItem(key, "1");
 
     // Save to backend in background (non-blocking)
     if (actor) {
