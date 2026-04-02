@@ -335,7 +335,10 @@ export default function NotesTab() {
   };
 
   const handleSave = async () => {
-    if (!notesActor) return;
+    if (!notesActor) {
+      toast.error("Not authenticated. Please wait a moment and try again.");
+      return;
+    }
     setSaving(true);
     const tagsArray = noteForm.tags
       .split(",")
@@ -377,7 +380,10 @@ export default function NotesTab() {
   };
 
   const handleDelete = async (noteId: bigint) => {
-    if (!notesActor) return;
+    if (!notesActor) {
+      toast.error("Not authenticated. Please wait a moment and try again.");
+      return;
+    }
     try {
       await notesActor.deleteNote(noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
@@ -388,7 +394,11 @@ export default function NotesTab() {
   };
 
   const handleCreateFolder = async () => {
-    if (!notesActor || !newFolderName.trim()) return;
+    if (!notesActor) {
+      toast.error("Not authenticated. Please wait a moment and try again.");
+      return;
+    }
+    if (!newFolderName.trim()) return;
     try {
       const folder = await notesActor.createFolder(
         newFolderName.trim(),

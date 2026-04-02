@@ -696,20 +696,20 @@ export default function PlannerTab() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 z-40"
-                    style={{ zIndex: 200 }}
+                    className="fixed inset-0 bg-black/60"
+                    style={{ zIndex: 9998 }}
                     onClick={() => setOutfitPickerOpen(false)}
                   />
                 )}
                 {outfitPickerOpen && (
                   <motion.div
                     data-ocid="planner.modal"
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.92, opacity: 0, x: "-50%", y: "-50%" }}
+                    animate={{ scale: 1, opacity: 1, x: "-50%", y: "-50%" }}
+                    exit={{ scale: 0.92, opacity: 0, x: "-50%", y: "-50%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
-                    style={{ zIndex: 201, transformOrigin: "center" }}
+                    className="fixed top-1/2 left-1/2 w-[90vw] max-w-[400px] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
+                    style={{ zIndex: 9999 }}
                   >
                     <div className="flex items-center justify-between mb-4 px-5 pt-4">
                       <h3 className="font-bold text-sm text-foreground">

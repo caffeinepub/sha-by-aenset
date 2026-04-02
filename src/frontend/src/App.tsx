@@ -345,13 +345,39 @@ function AppContent() {
 
   if (!identity) return <AuthScreen />;
 
+  const principalId = identity.getPrincipal().toString();
+  const onboardingDoneKey = `sha_onboarding_done_${principalId}`;
+  const hasCompletedOnboarding =
+    localStorage.getItem(onboardingDoneKey) === "1";
   const hasCachedProfile = !!localCache.get(CACHE_KEYS.profile);
-  if (isLoading && !hasCachedProfile) {
-    return <SplashScreen />;
+
+  // If the user has previously completed onboarding and we have a cached profile,
+  // go straight to the app without waiting for the actor or showing any login screen.
+  if (hasCompletedOnboarding && hasCachedProfile && !showOnboarding) {
+    // user may still be null while the actor is loading - that's fine, render the app
+    // and let it hydrate from cache in the background
+    if (!user) {
+      const cached = localCache.get<import("./backend.d").UserProfileView>(
+        CACHE_KEYS.profile,
+      );
+      if (cached) {
+        // Hydrate user from cache synchronously to avoid a flicker
+        setUser(cached);
+      }
+    }
+  } else {
+    if (isLoading && !hasCachedProfile) {
+      return <SplashScreen />;
+    }
+
+    if (showOnboarding || (!user && !hasCompletedOnboarding)) {
+      return <OnboardingScreen onFinish={handleOnboardingFinish} />;
+    }
   }
 
-  if (showOnboarding || !user) {
-    return <OnboardingScreen onFinish={handleOnboardingFinish} />;
+  // Final safety: if still no user after all checks, show splash briefly
+  if (!user) {
+    return <SplashScreen />;
   }
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
