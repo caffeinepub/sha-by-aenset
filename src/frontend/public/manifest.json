@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/assets/splash_screen-019d612d-bd8e-71b4-8343-e64498d89c30.png",
+      "src": "/assets/sh_1-019d612d-bbd1-7276-8ba0-384a730a556e.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/splash_screen-019d612d-bd8e-71b4-8343-e64498d89c30.png",
+      "src": "/assets/sh_1-019d612d-bbd1-7276-8ba0-384a730a556e.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

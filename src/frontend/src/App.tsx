@@ -100,7 +100,7 @@ function SplashScreen() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <img
-        src="/assets/sh_1-019d612d-bbd1-7276-8ba0-384a730a556e.png"
+        src="/assets/splash_screen-019d612d-bd8e-71b4-8343-e64498d89c30.png"
         alt="Sha by Aenset"
         className="w-full h-full object-cover absolute inset-0"
         style={{ zIndex: 0 }}
