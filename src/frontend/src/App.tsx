@@ -98,17 +98,19 @@ function TabWrapper({
 
 function SplashScreen() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-black text-foreground">Sha</h1>
-        <p className="text-xs text-accent font-bold tracking-widest uppercase mt-1">
-          by Aenset
-        </p>
-        <div className="mt-6 flex justify-center gap-1">
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <img
+        src="/assets/sh_1-019d612d-bbd1-7276-8ba0-384a730a556e.png"
+        alt="Sha by Aenset"
+        className="w-full h-full object-cover absolute inset-0"
+        style={{ zIndex: 0 }}
+      />
+      <div className="relative z-10 flex flex-col items-center gap-6">
+        <div className="flex justify-center gap-2">
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="w-2 h-2 rounded-full bg-accent animate-bounce"
+              className="w-2 h-2 rounded-full bg-white animate-bounce"
               style={{ animationDelay: `${i * 0.15}s` }}
             />
           ))}
