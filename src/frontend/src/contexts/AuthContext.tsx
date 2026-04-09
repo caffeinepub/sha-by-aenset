@@ -1,5 +1,5 @@
 import { type ReactNode, createContext, useContext, useState } from "react";
-import type { UserProfileView } from "../backend.d";
+import type { UserProfileView } from "../types";
 
 interface AuthContextType {
   user: UserProfileView | null;

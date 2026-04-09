@@ -4,7 +4,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Send, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import type { Entry, FinanceSummary, Note, Task } from "../backend.d";
 import { useActor } from "../hooks/useActor";
 import {
   useGetAllEntries,
@@ -12,6 +11,7 @@ import {
   useGetAllTasks,
   useGetSummary,
 } from "../hooks/useQueries";
+import type { Entry, FinanceSummary, Note, Task } from "../types";
 import { parseDateInput } from "../utils/dateParser";
 
 interface FloatingChatBotProps {

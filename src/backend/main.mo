@@ -10,8 +10,8 @@ import Array "mo:core/Array";
 import Float "mo:core/Float";
 import Iter "mo:core/Iter";
 import Time "mo:core/Time";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
+import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
+import AccessControl "mo:caffeineai-authorization/access-control";
 
 actor {
   type User = Principal;

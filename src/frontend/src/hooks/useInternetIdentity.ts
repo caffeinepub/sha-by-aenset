@@ -4,7 +4,6 @@ import {
   type AuthClientLoginOptions,
 } from "@dfinity/auth-client";
 import type { Identity } from "@icp-sdk/core/agent";
-import { DelegationIdentity, isDelegationValid } from "@icp-sdk/core/identity";
 import {
   type PropsWithChildren,
   type ReactNode,
@@ -14,9 +13,9 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { loadConfig } from "../config";
 
 export type Status =
   | "initializing"
@@ -72,16 +71,12 @@ const InternetIdentityReactContext = createContext<ProviderValue | undefined>(
 async function createAuthClient(
   createOptions?: AuthClientCreateOptions,
 ): Promise<AuthClient> {
-  const config = await loadConfig();
   const options: AuthClientCreateOptions = {
     idleOptions: {
       // Default behaviour of this hook is not to logout and reload window on identity expiration
       disableDefaultIdleCallback: true,
       disableIdle: true,
       ...createOptions?.idleOptions,
-    },
-    loginOptions: {
-      derivationOrigin: config.ii_derivation_origin,
     },
     ...createOptions,
   };
@@ -156,6 +151,11 @@ export function InternetIdentityProvider({
   const [loginStatus, setStatus] = useState<Status>("initializing");
   const [loginError, setError] = useState<Error | undefined>(undefined);
 
+  // Capture createOptions in a ref so the mount-only useEffect can read it
+  // without needing createOptions in its dependency array (which would cause
+  // an infinite re-initialization loop).
+  const createOptionsRef = useRef(createOptions);
+
   const setErrorMessage = useCallback((message: string) => {
     setStatus("loginError");
     setError(new Error(message));
@@ -186,15 +186,9 @@ export function InternetIdentityProvider({
       return;
     }
 
-    const currentIdentity = authClient.getIdentity();
-    if (
-      !currentIdentity.getPrincipal().isAnonymous() &&
-      currentIdentity instanceof DelegationIdentity &&
-      isDelegationValid(currentIdentity.getDelegation())
-    ) {
-      setErrorMessage("User is already authenticated");
-      return;
-    }
+    // NOTE: The "already authenticated" check has been intentionally removed.
+    // The login function must always open the II popup so returning users can
+    // re-authenticate after session expiry or a canister redeployment.
 
     const options: AuthClientLoginOptions = {
       identityProvider: DEFAULT_IDENTITY_PROVIDER,
@@ -231,30 +225,32 @@ export function InternetIdentityProvider({
       });
   }, [authClient, setErrorMessage]);
 
+  // Initialise the auth client ONCE on mount. Do NOT include authClient in the
+  // dependency array — we only want this to run once on mount, not every time
+  // authClient changes (which would cause an infinite loop).
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
         setStatus("initializing");
-        let existingClient = authClient;
-        if (!existingClient) {
-          existingClient = await createAuthClient(createOptions);
-          if (cancelled) return;
-          setAuthClient(existingClient);
-        }
-        const isAuthenticated = await existingClient.isAuthenticated();
+        const newClient = await createAuthClient(createOptionsRef.current);
+        if (cancelled) return;
+        setAuthClient(newClient);
+        const isAuthenticated = await newClient.isAuthenticated();
         if (cancelled) return;
         if (isAuthenticated) {
-          const loadedIdentity = existingClient.getIdentity();
+          const loadedIdentity = newClient.getIdentity();
           setIdentity(loadedIdentity);
         }
       } catch (unknownError) {
-        setStatus("loginError");
-        setError(
-          unknownError instanceof Error
-            ? unknownError
-            : new Error("Initialization failed"),
-        );
+        if (!cancelled) {
+          setStatus("loginError");
+          setError(
+            unknownError instanceof Error
+              ? unknownError
+              : new Error("Initialization failed"),
+          );
+        }
       } finally {
         if (!cancelled) setStatus("idle");
       }
@@ -262,7 +258,8 @@ export function InternetIdentityProvider({
     return () => {
       cancelled = true;
     };
-  }, [createOptions, authClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — run once on mount only to prevent auth loops
 
   const value = useMemo<ProviderValue>(
     () => ({

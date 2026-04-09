@@ -7,30 +7,20 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface Entry {
+export interface Note {
     id: bigint;
-    entryType: string;
-    date: string;
-    description: string;
+    title: string;
+    body: string;
+    tags: Array<string>;
     timestamp: Time;
-    category: string;
-    amount: number;
+    folderId: bigint;
 }
 export type Time = bigint;
-export type EntryId = bigint;
+export type User = Principal;
 export interface Preferences {
     geminiApiKey: string;
     language: string;
     darkMode: boolean;
-}
-export type User = Principal;
-export interface UserProfileView {
-    tasks: Array<Task>;
-    name: string;
-    email: string;
-    preferences: Preferences;
-    registrationTime: Time;
-    finances: Array<Entry>;
 }
 export interface Task {
     id: bigint;
@@ -41,18 +31,45 @@ export interface Task {
     description: string;
     timestamp: Time;
 }
-export type TaskId = bigint;
-export interface FinanceSummary {
-    balance: number;
-    totalIncome: number;
-    totalExpenses: number;
-}
-export interface Note {
+export interface ClothingItem {
     id: bigint;
-    title: string;
-    body: string;
-    folderId: bigint;
+    name: string;
+    photoUrl: string;
+    timestamp: Time;
+    category: string;
+}
+export interface PlannerDayOutfit {
+    outfitId: bigint;
+    date: string;
+}
+export interface RoutineCompletion {
+    date: string;
+    completedRoutineIds: Array<bigint>;
+}
+export interface Entry {
+    id: bigint;
+    entryType: string;
+    date: string;
+    description: string;
+    timestamp: Time;
+    category: string;
+    amount: number;
+}
+export interface UserProfileView {
+    tasks: Array<Task>;
+    name: string;
+    email: string;
+    preferences: Preferences;
+    registrationTime: Time;
+    finances: Array<Entry>;
+}
+export interface Outfit {
+    id: bigint;
+    name: string;
     tags: Array<string>;
+    description: string;
+    photoUrl: string;
+    occasion: string;
     timestamp: Time;
 }
 export interface Folder {
@@ -61,35 +78,16 @@ export interface Folder {
     color: string;
     timestamp: Time;
 }
-export interface Outfit {
-    id: bigint;
-    name: string;
-    occasion: string;
-    description: string;
-    photoUrl: string;
-    tags: Array<string>;
-    timestamp: Time;
-}
-export interface ClothingItem {
-    id: bigint;
-    name: string;
-    category: string;
-    photoUrl: string;
-    timestamp: Time;
-}
-export interface PlannerDayOutfit {
-    date: string;
-    outfitId: bigint;
-}
 export interface Routine {
     id: bigint;
     name: string;
-    timeOfDay: string;
     timestamp: Time;
+    timeOfDay: string;
 }
-export interface RoutineCompletion {
-    date: string;
-    completedRoutineIds: Array<bigint>;
+export interface FinanceSummary {
+    balance: number;
+    totalIncome: number;
+    totalExpenses: number;
 }
 export enum UserRole {
     admin = "admin",
@@ -98,48 +96,48 @@ export enum UserRole {
 }
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    createClothingItem(name: string, category: string, photoUrl: string): Promise<ClothingItem>;
     createFinanceEntry(amount: number, entryType: string, category: string, description: string, date: string): Promise<Entry>;
+    createFolder(name: string, color: string): Promise<Folder>;
+    createNote(title: string, body: string, folderId: bigint, tags: Array<string>): Promise<Note>;
+    createOutfit(name: string, occasion: string, description: string, photoUrl: string, tags: Array<string>): Promise<Outfit>;
+    createRoutine(name: string, timeOfDay: string): Promise<Routine>;
     createTask(title: string, description: string, date: string): Promise<Task>;
-    deleteEntry(entryId: EntryId): Promise<void>;
-    deleteTask(taskId: TaskId): Promise<void>;
+    deleteClothingItem(itemId: bigint): Promise<void>;
+    deleteEntry(entryId: bigint): Promise<void>;
+    deleteFolder(folderId: bigint): Promise<void>;
+    deleteNote(noteId: bigint): Promise<void>;
+    deleteOutfit(outfitId: bigint): Promise<void>;
+    deletePlannerDayOutfit(date: string): Promise<void>;
+    deleteRoutine(routineId: bigint): Promise<void>;
+    deleteTask(taskId: bigint): Promise<void>;
+    getAllClothingItems(): Promise<Array<ClothingItem>>;
     getAllEntries(): Promise<Array<Entry>>;
+    getAllFolders(): Promise<Array<Folder>>;
+    getAllNotes(): Promise<Array<Note>>;
+    getAllOutfits(): Promise<Array<Outfit>>;
+    getAllPlannerDayOutfits(): Promise<Array<PlannerDayOutfit>>;
+    getAllRoutineCompletions(): Promise<Array<RoutineCompletion>>;
+    getAllRoutines(): Promise<Array<Routine>>;
     getAllTasks(): Promise<Array<Task>>;
     getCallerUserProfile(): Promise<UserProfileView | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getPlannerDayOutfit(date: string): Promise<PlannerDayOutfit | null>;
+    getRoutineCompletion(date: string): Promise<RoutineCompletion | null>;
     getSummary(): Promise<FinanceSummary>;
+    getUserGymState(): Promise<string | null>;
     getUserProfile(user: Principal): Promise<UserProfileView | null>;
     isCallerAdmin(): Promise<boolean>;
     listEntriesByType(entryType: string): Promise<Array<Entry>>;
     listTasksByDate(date: string): Promise<Array<Task>>;
     saveCallerUserProfile(profile: UserProfileView): Promise<void>;
-    updatePreferences(language: string, darkMode: boolean, geminiApiKey: string): Promise<void>;
-    updateTask(taskId: bigint, title: string, description: string, completed: boolean): Promise<Task>;
-    createNote(title: string, body: string, folderId: bigint, tags: Array<string>): Promise<Note>;
-    updateNote(noteId: bigint, title: string, body: string, folderId: bigint, tags: Array<string>): Promise<Note>;
-    deleteNote(noteId: bigint): Promise<void>;
-    getAllNotes(): Promise<Array<Note>>;
-    createFolder(name: string, color: string): Promise<Folder>;
-    deleteFolder(folderId: bigint): Promise<void>;
-    getAllFolders(): Promise<Array<Folder>>;
-    createOutfit(name: string, occasion: string, description: string, photoUrl: string, tags: Array<string>): Promise<Outfit>;
-    updateOutfit(outfitId: bigint, name: string, occasion: string, description: string, photoUrl: string, tags: Array<string>): Promise<Outfit>;
-    deleteOutfit(outfitId: bigint): Promise<void>;
-    getAllOutfits(): Promise<Array<Outfit>>;
-    createClothingItem(name: string, category: string, photoUrl: string): Promise<ClothingItem>;
-    updateClothingItem(itemId: bigint, name: string, category: string, photoUrl: string): Promise<ClothingItem>;
-    deleteClothingItem(itemId: bigint): Promise<void>;
-    getAllClothingItems(): Promise<Array<ClothingItem>>;
-    setPlannerDayOutfit(date: string, outfitId: bigint): Promise<PlannerDayOutfit>;
-    deletePlannerDayOutfit(date: string): Promise<void>;
-    getPlannerDayOutfit(date: string): Promise<PlannerDayOutfit | null>;
-    getAllPlannerDayOutfits(): Promise<Array<PlannerDayOutfit>>;
-    createRoutine(name: string, timeOfDay: string): Promise<Routine>;
-    updateRoutine(routineId: bigint, name: string, timeOfDay: string): Promise<Routine>;
-    deleteRoutine(routineId: bigint): Promise<void>;
-    getAllRoutines(): Promise<Array<Routine>>;
-    setRoutineCompletion(date: string, completedRoutineIds: Array<bigint>): Promise<RoutineCompletion>;
-    getRoutineCompletion(date: string): Promise<RoutineCompletion | null>;
-    getAllRoutineCompletions(): Promise<Array<RoutineCompletion>>;
     saveUserGymState(json: string): Promise<void>;
-    getUserGymState(): Promise<string | null>;
+    setPlannerDayOutfit(date: string, outfitId: bigint): Promise<PlannerDayOutfit>;
+    setRoutineCompletion(date: string, completedRoutineIds: Array<bigint>): Promise<RoutineCompletion>;
+    updateClothingItem(itemId: bigint, name: string, category: string, photoUrl: string): Promise<ClothingItem>;
+    updateNote(noteId: bigint, title: string, body: string, folderId: bigint, tags: Array<string>): Promise<Note>;
+    updateOutfit(outfitId: bigint, name: string, occasion: string, description: string, photoUrl: string, tags: Array<string>): Promise<Outfit>;
+    updatePreferences(language: string, darkMode: boolean, geminiApiKey: string): Promise<void>;
+    updateRoutine(routineId: bigint, name: string, timeOfDay: string): Promise<Routine>;
+    updateTask(taskId: bigint, title: string, description: string, completed: boolean): Promise<Task>;
 }

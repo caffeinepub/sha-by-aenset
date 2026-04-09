@@ -24,7 +24,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import type { ClothingItem, Outfit } from "../backend.d";
 import ImageCropModal from "../components/ImageCropModal";
 import { useI18n } from "../contexts/I18nContext";
 import {
@@ -37,6 +36,7 @@ import {
   useUpdateOutfit,
 } from "../hooks/useQueries";
 import { useImageUpload } from "../hooks/useStorageUpload";
+import type { ClothingItem, Outfit } from "../types";
 
 type Gender = "male" | "female" | null;
 

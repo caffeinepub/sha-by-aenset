@@ -10,6 +10,13 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface ClothingItem {
+  'id' : bigint,
+  'name' : string,
+  'photoUrl' : string,
+  'timestamp' : Time,
+  'category' : string,
+}
 export interface Entry {
   'id' : bigint,
   'entryType' : string,
@@ -19,16 +26,49 @@ export interface Entry {
   'category' : string,
   'amount' : number,
 }
-export type EntryId = bigint;
 export interface FinanceSummary {
   'balance' : number,
   'totalIncome' : number,
   'totalExpenses' : number,
 }
+export interface Folder {
+  'id' : bigint,
+  'name' : string,
+  'color' : string,
+  'timestamp' : Time,
+}
+export interface Note {
+  'id' : bigint,
+  'title' : string,
+  'body' : string,
+  'tags' : Array<string>,
+  'timestamp' : Time,
+  'folderId' : bigint,
+}
+export interface Outfit {
+  'id' : bigint,
+  'name' : string,
+  'tags' : Array<string>,
+  'description' : string,
+  'photoUrl' : string,
+  'occasion' : string,
+  'timestamp' : Time,
+}
+export interface PlannerDayOutfit { 'outfitId' : bigint, 'date' : string }
 export interface Preferences {
   'geminiApiKey' : string,
   'language' : string,
   'darkMode' : boolean,
+}
+export interface Routine {
+  'id' : bigint,
+  'name' : string,
+  'timestamp' : Time,
+  'timeOfDay' : string,
+}
+export interface RoutineCompletion {
+  'date' : string,
+  'completedRoutineIds' : Array<bigint>,
 }
 export interface Task {
   'id' : bigint,
@@ -39,7 +79,6 @@ export interface Task {
   'description' : string,
   'timestamp' : Time,
 }
-export type TaskId = bigint;
 export type Time = bigint;
 export type User = Principal;
 export interface UserProfileView {
@@ -53,99 +92,71 @@ export interface UserProfileView {
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface Note {
-  'id' : bigint,
-  'title' : string,
-  'body' : string,
-  'folderId' : bigint,
-  'tags' : Array<string>,
-  'timestamp' : Time,
-}
-export interface Folder {
-  'id' : bigint,
-  'name' : string,
-  'color' : string,
-  'timestamp' : Time,
-}
-export interface Outfit {
-  'id' : bigint,
-  'name' : string,
-  'occasion' : string,
-  'description' : string,
-  'photoUrl' : string,
-  'tags' : Array<string>,
-  'timestamp' : Time,
-}
-export interface ClothingItem {
-  'id' : bigint,
-  'name' : string,
-  'category' : string,
-  'photoUrl' : string,
-  'timestamp' : Time,
-}
-export interface PlannerDayOutfit {
-  'date' : string,
-  'outfitId' : bigint,
-}
-export interface Routine {
-  'id' : bigint,
-  'name' : string,
-  'timeOfDay' : string,
-  'timestamp' : Time,
-}
-export interface RoutineCompletion {
-  'date' : string,
-  'completedRoutineIds' : Array<bigint>,
-}
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  '_initializeAccessControl' : ActorMethod<[], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'createClothingItem' : ActorMethod<[string, string, string], ClothingItem>,
   'createFinanceEntry' : ActorMethod<
     [number, string, string, string, string],
     Entry
   >,
+  'createFolder' : ActorMethod<[string, string], Folder>,
+  'createNote' : ActorMethod<[string, string, bigint, Array<string>], Note>,
+  'createOutfit' : ActorMethod<
+    [string, string, string, string, Array<string>],
+    Outfit
+  >,
+  'createRoutine' : ActorMethod<[string, string], Routine>,
   'createTask' : ActorMethod<[string, string, string], Task>,
-  'deleteEntry' : ActorMethod<[EntryId], undefined>,
-  'deleteTask' : ActorMethod<[TaskId], undefined>,
+  'deleteClothingItem' : ActorMethod<[bigint], undefined>,
+  'deleteEntry' : ActorMethod<[bigint], undefined>,
+  'deleteFolder' : ActorMethod<[bigint], undefined>,
+  'deleteNote' : ActorMethod<[bigint], undefined>,
+  'deleteOutfit' : ActorMethod<[bigint], undefined>,
+  'deletePlannerDayOutfit' : ActorMethod<[string], undefined>,
+  'deleteRoutine' : ActorMethod<[bigint], undefined>,
+  'deleteTask' : ActorMethod<[bigint], undefined>,
+  'getAllClothingItems' : ActorMethod<[], Array<ClothingItem>>,
   'getAllEntries' : ActorMethod<[], Array<Entry>>,
+  'getAllFolders' : ActorMethod<[], Array<Folder>>,
+  'getAllNotes' : ActorMethod<[], Array<Note>>,
+  'getAllOutfits' : ActorMethod<[], Array<Outfit>>,
+  'getAllPlannerDayOutfits' : ActorMethod<[], Array<PlannerDayOutfit>>,
+  'getAllRoutineCompletions' : ActorMethod<[], Array<RoutineCompletion>>,
+  'getAllRoutines' : ActorMethod<[], Array<Routine>>,
   'getAllTasks' : ActorMethod<[], Array<Task>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfileView]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getPlannerDayOutfit' : ActorMethod<[string], [] | [PlannerDayOutfit]>,
+  'getRoutineCompletion' : ActorMethod<[string], [] | [RoutineCompletion]>,
   'getSummary' : ActorMethod<[], FinanceSummary>,
+  'getUserGymState' : ActorMethod<[], [] | [string]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfileView]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'listEntriesByType' : ActorMethod<[string], Array<Entry>>,
   'listTasksByDate' : ActorMethod<[string], Array<Task>>,
   'saveCallerUserProfile' : ActorMethod<[UserProfileView], undefined>,
-  'updatePreferences' : ActorMethod<[string, boolean, string], undefined>,
-  'updateTask' : ActorMethod<[bigint, string, string, boolean], Task>,
-  'createNote' : ActorMethod<[string, string, bigint, Array<string>], Note>,
-  'updateNote' : ActorMethod<[bigint, string, string, bigint, Array<string>], Note>,
-  'deleteNote' : ActorMethod<[bigint], undefined>,
-  'getAllNotes' : ActorMethod<[], Array<Note>>,
-  'createFolder' : ActorMethod<[string, string], Folder>,
-  'deleteFolder' : ActorMethod<[bigint], undefined>,
-  'getAllFolders' : ActorMethod<[], Array<Folder>>,
-  'createOutfit' : ActorMethod<[string, string, string, string, Array<string>], Outfit>,
-  'updateOutfit' : ActorMethod<[bigint, string, string, string, string, Array<string>], Outfit>,
-  'deleteOutfit' : ActorMethod<[bigint], undefined>,
-  'getAllOutfits' : ActorMethod<[], Array<Outfit>>,
-  'createClothingItem' : ActorMethod<[string, string, string], ClothingItem>,
-  'updateClothingItem' : ActorMethod<[bigint, string, string, string], ClothingItem>,
-  'deleteClothingItem' : ActorMethod<[bigint], undefined>,
-  'getAllClothingItems' : ActorMethod<[], Array<ClothingItem>>,
-  'setPlannerDayOutfit' : ActorMethod<[string, bigint], PlannerDayOutfit>,
-  'deletePlannerDayOutfit' : ActorMethod<[string], undefined>,
-  'getPlannerDayOutfit' : ActorMethod<[string], [] | [PlannerDayOutfit]>,
-  'getAllPlannerDayOutfits' : ActorMethod<[], Array<PlannerDayOutfit>>,
-  'createRoutine' : ActorMethod<[string, string], Routine>,
-  'updateRoutine' : ActorMethod<[bigint, string, string], Routine>,
-  'deleteRoutine' : ActorMethod<[bigint], undefined>,
-  'getAllRoutines' : ActorMethod<[], Array<Routine>>,
-  'setRoutineCompletion' : ActorMethod<[string, Array<bigint>], RoutineCompletion>,
-  'getAllRoutineCompletions' : ActorMethod<[], Array<RoutineCompletion>>,
   'saveUserGymState' : ActorMethod<[string], undefined>,
-  'getUserGymState' : ActorMethod<[], [string] | []>,
+  'setPlannerDayOutfit' : ActorMethod<[string, bigint], PlannerDayOutfit>,
+  'setRoutineCompletion' : ActorMethod<
+    [string, Array<bigint>],
+    RoutineCompletion
+  >,
+  'updateClothingItem' : ActorMethod<
+    [bigint, string, string, string],
+    ClothingItem
+  >,
+  'updateNote' : ActorMethod<
+    [bigint, string, string, bigint, Array<string>],
+    Note
+  >,
+  'updateOutfit' : ActorMethod<
+    [bigint, string, string, string, string, Array<string>],
+    Outfit
+  >,
+  'updatePreferences' : ActorMethod<[string, boolean, string], undefined>,
+  'updateRoutine' : ActorMethod<[bigint, string, string], Routine>,
+  'updateTask' : ActorMethod<[bigint, string, string, boolean], Task>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

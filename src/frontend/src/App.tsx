@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import type { UserProfileView } from "./backend.d";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { I18nProvider, RTL_LANGUAGES, useI18n } from "./contexts/I18nContext";
@@ -33,6 +32,7 @@ import ProfileTab, {
 } from "./tabs/ProfileTab";
 import type { TabBackgrounds } from "./tabs/ProfileTab";
 import WardrobeTab from "./tabs/WardrobeTab";
+import type { UserProfileView } from "./types";
 import { CACHE_KEYS, localCache } from "./utils/localCache";
 
 type Tab =
@@ -359,9 +359,7 @@ function AppContent() {
     // user may still be null while the actor is loading - that's fine, render the app
     // and let it hydrate from cache in the background
     if (!user) {
-      const cached = localCache.get<import("./backend.d").UserProfileView>(
-        CACHE_KEYS.profile,
-      );
+      const cached = localCache.get<UserProfileView>(CACHE_KEYS.profile);
       if (cached) {
         // Hydrate user from cache synchronously to avoid a flicker
         setUser(cached);

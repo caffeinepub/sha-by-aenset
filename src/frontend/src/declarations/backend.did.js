@@ -14,6 +14,13 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const Time = IDL.Int;
+export const ClothingItem = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'photoUrl' : IDL.Text,
+  'timestamp' : Time,
+  'category' : IDL.Text,
+});
 export const Entry = IDL.Record({
   'id' : IDL.Nat,
   'entryType' : IDL.Text,
@@ -23,6 +30,35 @@ export const Entry = IDL.Record({
   'category' : IDL.Text,
   'amount' : IDL.Float64,
 });
+export const Folder = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'color' : IDL.Text,
+  'timestamp' : Time,
+});
+export const Note = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'body' : IDL.Text,
+  'tags' : IDL.Vec(IDL.Text),
+  'timestamp' : Time,
+  'folderId' : IDL.Nat,
+});
+export const Outfit = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'tags' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'photoUrl' : IDL.Text,
+  'occasion' : IDL.Text,
+  'timestamp' : Time,
+});
+export const Routine = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'timestamp' : Time,
+  'timeOfDay' : IDL.Text,
+});
 export const User = IDL.Principal;
 export const Task = IDL.Record({
   'id' : IDL.Nat,
@@ -31,10 +67,16 @@ export const Task = IDL.Record({
   'user' : User,
   'completed' : IDL.Bool,
   'description' : IDL.Text,
-  'timestamp' : IDL.Int,
+  'timestamp' : Time,
 });
-export const EntryId = IDL.Nat;
-export const TaskId = IDL.Nat;
+export const PlannerDayOutfit = IDL.Record({
+  'outfitId' : IDL.Nat,
+  'date' : IDL.Text,
+});
+export const RoutineCompletion = IDL.Record({
+  'date' : IDL.Text,
+  'completedRoutineIds' : IDL.Vec(IDL.Nat),
+});
 export const Preferences = IDL.Record({
   'geminiApiKey' : IDL.Text,
   'language' : IDL.Text,
@@ -53,67 +95,72 @@ export const FinanceSummary = IDL.Record({
   'totalIncome' : IDL.Float64,
   'totalExpenses' : IDL.Float64,
 });
-export const Note = IDL.Record({
-  'id' : IDL.Nat,
-  'title' : IDL.Text,
-  'body' : IDL.Text,
-  'folderId' : IDL.Nat,
-  'tags' : IDL.Vec(IDL.Text),
-  'timestamp' : Time,
-});
-export const Folder = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'color' : IDL.Text,
-  'timestamp' : Time,
-});
-export const Outfit = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'occasion' : IDL.Text,
-  'description' : IDL.Text,
-  'photoUrl' : IDL.Text,
-  'tags' : IDL.Vec(IDL.Text),
-  'timestamp' : Time,
-});
-export const ClothingItem = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'category' : IDL.Text,
-  'photoUrl' : IDL.Text,
-  'timestamp' : Time,
-});
-export const PlannerDayOutfit = IDL.Record({
-  'date' : IDL.Text,
-  'outfitId' : IDL.Nat,
-});
-export const Routine = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'timeOfDay' : IDL.Text,
-  'timestamp' : Time,
-});
-export const RoutineCompletion = IDL.Record({
-  'date' : IDL.Text,
-  'completedRoutineIds' : IDL.Vec(IDL.Nat),
-});
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  '_initializeAccessControl' : IDL.Func([], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'createClothingItem' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [ClothingItem],
+      [],
+    ),
   'createFinanceEntry' : IDL.Func(
       [IDL.Float64, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [Entry],
       [],
     ),
+  'createFolder' : IDL.Func([IDL.Text, IDL.Text], [Folder], []),
+  'createNote' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)],
+      [Note],
+      [],
+    ),
+  'createOutfit' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
+      [Outfit],
+      [],
+    ),
+  'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
   'createTask' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Task], []),
-  'deleteEntry' : IDL.Func([EntryId], [], []),
-  'deleteTask' : IDL.Func([TaskId], [], []),
+  'deleteClothingItem' : IDL.Func([IDL.Nat], [], []),
+  'deleteEntry' : IDL.Func([IDL.Nat], [], []),
+  'deleteFolder' : IDL.Func([IDL.Nat], [], []),
+  'deleteNote' : IDL.Func([IDL.Nat], [], []),
+  'deleteOutfit' : IDL.Func([IDL.Nat], [], []),
+  'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
+  'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
+  'deleteTask' : IDL.Func([IDL.Nat], [], []),
+  'getAllClothingItems' : IDL.Func([], [IDL.Vec(ClothingItem)], ['query']),
   'getAllEntries' : IDL.Func([], [IDL.Vec(Entry)], ['query']),
+  'getAllFolders' : IDL.Func([], [IDL.Vec(Folder)], ['query']),
+  'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
+  'getAllOutfits' : IDL.Func([], [IDL.Vec(Outfit)], ['query']),
+  'getAllPlannerDayOutfits' : IDL.Func(
+      [],
+      [IDL.Vec(PlannerDayOutfit)],
+      ['query'],
+    ),
+  'getAllRoutineCompletions' : IDL.Func(
+      [],
+      [IDL.Vec(RoutineCompletion)],
+      ['query'],
+    ),
+  'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
   'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfileView)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getPlannerDayOutfit' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(PlannerDayOutfit)],
+      ['query'],
+    ),
+  'getRoutineCompletion' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(RoutineCompletion)],
+      ['query'],
+    ),
   'getSummary' : IDL.Func([], [FinanceSummary], ['query']),
+  'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfileView)],
@@ -123,35 +170,31 @@ export const idlService = IDL.Service({
   'listEntriesByType' : IDL.Func([IDL.Text], [IDL.Vec(Entry)], ['query']),
   'listTasksByDate' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfileView], [], []),
-  'updatePreferences' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
-  'updateTask' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Bool], [Task], []),
-  'createNote' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)], [Note], []),
-  'updateNote' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)], [Note], []),
-  'deleteNote' : IDL.Func([IDL.Nat], [], []),
-  'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
-  'createFolder' : IDL.Func([IDL.Text, IDL.Text], [Folder], []),
-  'deleteFolder' : IDL.Func([IDL.Nat], [], []),
-  'getAllFolders' : IDL.Func([], [IDL.Vec(Folder)], ['query']),
-  'createOutfit' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)], [Outfit], []),
-  'updateOutfit' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)], [Outfit], []),
-  'deleteOutfit' : IDL.Func([IDL.Nat], [], []),
-  'getAllOutfits' : IDL.Func([], [IDL.Vec(Outfit)], ['query']),
-  'createClothingItem' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ClothingItem], []),
-  'updateClothingItem' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text], [ClothingItem], []),
-  'deleteClothingItem' : IDL.Func([IDL.Nat], [], []),
-  'getAllClothingItems' : IDL.Func([], [IDL.Vec(ClothingItem)], ['query']),
-  'setPlannerDayOutfit' : IDL.Func([IDL.Text, IDL.Nat], [PlannerDayOutfit], []),
-  'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
-  'getPlannerDayOutfit' : IDL.Func([IDL.Text], [IDL.Opt(PlannerDayOutfit)], ['query']),
-  'getAllPlannerDayOutfits' : IDL.Func([], [IDL.Vec(PlannerDayOutfit)], ['query']),
-  'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
-  'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
-  'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
-  'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
-  'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
-  'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
   'saveUserGymState' : IDL.Func([IDL.Text], [], []),
-  'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+  'setPlannerDayOutfit' : IDL.Func([IDL.Text, IDL.Nat], [PlannerDayOutfit], []),
+  'setRoutineCompletion' : IDL.Func(
+      [IDL.Text, IDL.Vec(IDL.Nat)],
+      [RoutineCompletion],
+      [],
+    ),
+  'updateClothingItem' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+      [ClothingItem],
+      [],
+    ),
+  'updateNote' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)],
+      [Note],
+      [],
+    ),
+  'updateOutfit' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
+      [Outfit],
+      [],
+    ),
+  'updatePreferences' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
+  'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
+  'updateTask' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Bool], [Task], []),
 });
 
 export const idlInitArgs = [];
@@ -163,6 +206,13 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const Time = IDL.Int;
+  const ClothingItem = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'photoUrl' : IDL.Text,
+    'timestamp' : Time,
+    'category' : IDL.Text,
+  });
   const Entry = IDL.Record({
     'id' : IDL.Nat,
     'entryType' : IDL.Text,
@@ -172,6 +222,35 @@ export const idlFactory = ({ IDL }) => {
     'category' : IDL.Text,
     'amount' : IDL.Float64,
   });
+  const Folder = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'color' : IDL.Text,
+    'timestamp' : Time,
+  });
+  const Note = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'body' : IDL.Text,
+    'tags' : IDL.Vec(IDL.Text),
+    'timestamp' : Time,
+    'folderId' : IDL.Nat,
+  });
+  const Outfit = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'tags' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'photoUrl' : IDL.Text,
+    'occasion' : IDL.Text,
+    'timestamp' : Time,
+  });
+  const Routine = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'timestamp' : Time,
+    'timeOfDay' : IDL.Text,
+  });
   const User = IDL.Principal;
   const Task = IDL.Record({
     'id' : IDL.Nat,
@@ -180,10 +259,16 @@ export const idlFactory = ({ IDL }) => {
     'user' : User,
     'completed' : IDL.Bool,
     'description' : IDL.Text,
-    'timestamp' : IDL.Int,
+    'timestamp' : Time,
   });
-  const EntryId = IDL.Nat;
-  const TaskId = IDL.Nat;
+  const PlannerDayOutfit = IDL.Record({
+    'outfitId' : IDL.Nat,
+    'date' : IDL.Text,
+  });
+  const RoutineCompletion = IDL.Record({
+    'date' : IDL.Text,
+    'completedRoutineIds' : IDL.Vec(IDL.Nat),
+  });
   const Preferences = IDL.Record({
     'geminiApiKey' : IDL.Text,
     'language' : IDL.Text,
@@ -202,63 +287,57 @@ export const idlFactory = ({ IDL }) => {
     'totalIncome' : IDL.Float64,
     'totalExpenses' : IDL.Float64,
   });
-  const Note = IDL.Record({
-    'id' : IDL.Nat,
-    'title' : IDL.Text,
-    'body' : IDL.Text,
-    'folderId' : IDL.Nat,
-    'tags' : IDL.Vec(IDL.Text),
-    'timestamp' : Time,
-  });
-  const Folder = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'color' : IDL.Text,
-    'timestamp' : Time,
-  });
-  const Outfit = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'occasion' : IDL.Text,
-    'description' : IDL.Text,
-    'photoUrl' : IDL.Text,
-    'tags' : IDL.Vec(IDL.Text),
-    'timestamp' : Time,
-  });
-  const ClothingItem = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'category' : IDL.Text,
-    'photoUrl' : IDL.Text,
-    'timestamp' : Time,
-  });
-  const PlannerDayOutfit = IDL.Record({
-    'date' : IDL.Text,
-    'outfitId' : IDL.Nat,
-  });
-  const Routine = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'timeOfDay' : IDL.Text,
-    'timestamp' : IDL.Int,
-  });
-  const RoutineCompletion = IDL.Record({
-    'date' : IDL.Text,
-    'completedRoutineIds' : IDL.Vec(IDL.Nat),
-  });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    '_initializeAccessControl' : IDL.Func([], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'createClothingItem' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [ClothingItem],
+        [],
+      ),
     'createFinanceEntry' : IDL.Func(
         [IDL.Float64, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [Entry],
         [],
       ),
+    'createFolder' : IDL.Func([IDL.Text, IDL.Text], [Folder], []),
+    'createNote' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)],
+        [Note],
+        [],
+      ),
+    'createOutfit' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
+        [Outfit],
+        [],
+      ),
+    'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
     'createTask' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Task], []),
-    'deleteEntry' : IDL.Func([EntryId], [], []),
-    'deleteTask' : IDL.Func([TaskId], [], []),
+    'deleteClothingItem' : IDL.Func([IDL.Nat], [], []),
+    'deleteEntry' : IDL.Func([IDL.Nat], [], []),
+    'deleteFolder' : IDL.Func([IDL.Nat], [], []),
+    'deleteNote' : IDL.Func([IDL.Nat], [], []),
+    'deleteOutfit' : IDL.Func([IDL.Nat], [], []),
+    'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
+    'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
+    'deleteTask' : IDL.Func([IDL.Nat], [], []),
+    'getAllClothingItems' : IDL.Func([], [IDL.Vec(ClothingItem)], ['query']),
     'getAllEntries' : IDL.Func([], [IDL.Vec(Entry)], ['query']),
+    'getAllFolders' : IDL.Func([], [IDL.Vec(Folder)], ['query']),
+    'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
+    'getAllOutfits' : IDL.Func([], [IDL.Vec(Outfit)], ['query']),
+    'getAllPlannerDayOutfits' : IDL.Func(
+        [],
+        [IDL.Vec(PlannerDayOutfit)],
+        ['query'],
+      ),
+    'getAllRoutineCompletions' : IDL.Func(
+        [],
+        [IDL.Vec(RoutineCompletion)],
+        ['query'],
+      ),
+    'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
     'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
     'getCallerUserProfile' : IDL.Func(
         [],
@@ -266,7 +345,18 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getPlannerDayOutfit' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(PlannerDayOutfit)],
+        ['query'],
+      ),
+    'getRoutineCompletion' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(RoutineCompletion)],
+        ['query'],
+      ),
     'getSummary' : IDL.Func([], [FinanceSummary], ['query']),
+    'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfileView)],
@@ -276,39 +366,39 @@ export const idlFactory = ({ IDL }) => {
     'listEntriesByType' : IDL.Func([IDL.Text], [IDL.Vec(Entry)], ['query']),
     'listTasksByDate' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfileView], [], []),
+    'saveUserGymState' : IDL.Func([IDL.Text], [], []),
+    'setPlannerDayOutfit' : IDL.Func(
+        [IDL.Text, IDL.Nat],
+        [PlannerDayOutfit],
+        [],
+      ),
+    'setRoutineCompletion' : IDL.Func(
+        [IDL.Text, IDL.Vec(IDL.Nat)],
+        [RoutineCompletion],
+        [],
+      ),
+    'updateClothingItem' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [ClothingItem],
+        [],
+      ),
+    'updateNote' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)],
+        [Note],
+        [],
+      ),
+    'updateOutfit' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
+        [Outfit],
+        [],
+      ),
     'updatePreferences' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
+    'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
     'updateTask' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Bool],
         [Task],
         [],
       ),
-    'createNote' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)], [Note], []),
-    'updateNote' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Vec(IDL.Text)], [Note], []),
-    'deleteNote' : IDL.Func([IDL.Nat], [], []),
-    'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
-    'createFolder' : IDL.Func([IDL.Text, IDL.Text], [Folder], []),
-    'deleteFolder' : IDL.Func([IDL.Nat], [], []),
-    'getAllFolders' : IDL.Func([], [IDL.Vec(Folder)], ['query']),
-    'createOutfit' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)], [Outfit], []),
-    'updateOutfit' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)], [Outfit], []),
-    'deleteOutfit' : IDL.Func([IDL.Nat], [], []),
-    'getAllOutfits' : IDL.Func([], [IDL.Vec(Outfit)], ['query']),
-    'createClothingItem' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ClothingItem], []),
-    'updateClothingItem' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text], [ClothingItem], []),
-    'deleteClothingItem' : IDL.Func([IDL.Nat], [], []),
-    'getAllClothingItems' : IDL.Func([], [IDL.Vec(ClothingItem)], ['query']),
-    'setPlannerDayOutfit' : IDL.Func([IDL.Text, IDL.Nat], [PlannerDayOutfit], []),
-    'deletePlannerDayOutfit' : IDL.Func([IDL.Text], [], []),
-    'getPlannerDayOutfit' : IDL.Func([IDL.Text], [IDL.Opt(PlannerDayOutfit)], ['query']),
-    'getAllPlannerDayOutfits' : IDL.Func([], [IDL.Vec(PlannerDayOutfit)], ['query']),
-    'createRoutine' : IDL.Func([IDL.Text, IDL.Text], [Routine], []),
-    'updateRoutine' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [Routine], []),
-    'deleteRoutine' : IDL.Func([IDL.Nat], [], []),
-    'getAllRoutines' : IDL.Func([], [IDL.Vec(Routine)], ['query']),
-    'setRoutineCompletion' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat)], [RoutineCompletion], []),
-    'getAllRoutineCompletions' : IDL.Func([], [IDL.Vec(RoutineCompletion)], ['query']),
-    'saveUserGymState' : IDL.Func([IDL.Text], [], []),
-    'getUserGymState' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   });
 };
 

@@ -12,7 +12,7 @@ import type {
   RoutineCompletion,
   Task,
   UserProfileView,
-} from "../backend.d";
+} from "../types";
 import { CACHE_KEYS, localCache } from "../utils/localCache";
 import { useActor } from "./useActor";
 

@@ -12,7 +12,6 @@ import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { Routine } from "../backend.d";
 import {
   useCreateRoutine,
   useDeleteRoutine,
@@ -21,6 +20,7 @@ import {
   useSetRoutineCompletion,
   useUpdateRoutine,
 } from "../hooks/useQueries";
+import type { Routine } from "../types";
 
 const ROUTINE_TODAY_KEY = "sha_routine_today";
 const ROUTINE_RESET_KEY = "sha_routine_reset_date";
